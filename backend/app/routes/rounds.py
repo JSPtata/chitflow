@@ -8,6 +8,7 @@ from app.models.round import Round
 from app.schemas.round import RoundCreate, RoundTransition, RoundResponse
 from app.core.security import get_current_user
 from app.state_machine.round_state_machine import transition_round
+from app.models.membership import Membership
 
 
 router = APIRouter(
@@ -109,3 +110,30 @@ def change_round_state(
     db.refresh(round_obj)
 
     return round_obj
+
+@router.get(
+    "/{chit_id}/rounds",
+    response_model=list[RoundResponse]
+)
+def get_rounds(
+    chit_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    membership = db.query(Membership).filter(
+        Membership.chit_id == chit_id,
+        Membership.user_id == current_user.user_id,
+        Membership.status == "ACTIVE"
+    ).first()
+
+    if not membership:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not a member of this chit group"
+        )
+
+    return db.query(Round).filter(
+        Round.chit_id == chit_id
+    ).order_by(
+        Round.round_number.asc()
+    ).all()

@@ -61,6 +61,17 @@ def add_member(
             status_code=400,
             detail="User is already a member of this chit group"
         )
+    
+    member_count = db.query(Membership).filter(
+        Membership.chit_id == chit_id,
+        Membership.status == "ACTIVE"
+    ).count()
+
+    if member_count >= chit.number_of_members:  # type: ignore
+        raise HTTPException(
+            status_code=400,
+            detail="Chit group has reached maximum member capacity"
+        )
 
     new_membership = Membership(
         user_id=membership.user_id,
@@ -73,3 +84,28 @@ def add_member(
     db.refresh(new_membership)
 
     return new_membership
+
+@router.get(
+    "/{chit_id}/members",
+    response_model=list[MembershipResponse]
+)
+def get_members(
+    chit_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    membership = db.query(Membership).filter(
+        Membership.chit_id == chit_id,
+        Membership.user_id == current_user.user_id,
+        Membership.status == "ACTIVE"
+    ).first()
+
+    if not membership:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not a member of this chit group"
+        )
+
+    return db.query(Membership).filter(
+        Membership.chit_id == chit_id
+    ).all()

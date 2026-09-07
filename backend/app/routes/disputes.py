@@ -13,7 +13,7 @@ from app.schemas.dispute import (
     DisputeResponse
 )
 from app.core.security import get_current_user
-from app.state_machine.round_state_machine import is_valid_transition
+from app.state_machine.round_state_machine import transition_round
 
 
 router = APIRouter(
@@ -68,7 +68,20 @@ def raise_dispute(
         status="RAISED"
     )
 
-    round_obj.current_state = "DISPUTE_RAISED"  # type: ignore
+    try:
+        transition_round(
+            db=db,
+            round_obj=round_obj,
+            new_state="DISPUTE_RAISED",
+            actor_id=current_user.user_id,  # type: ignore
+            event_type="DISPUTE_RAISED",
+            details=dispute_data.description
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error)
+        )
 
     db.add(new_dispute)
     db.commit()
@@ -110,17 +123,22 @@ def review_dispute(
             detail="Only the chit group creator can review disputes"
         )
 
-    if not is_valid_transition(
-        round_obj.current_state,  # type: ignore
-        "DISPUTE_UNDER_REVIEW"
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Dispute cannot be moved to review from current state"
-        )
 
     dispute.status = "UNDER_REVIEW"  # type: ignore
-    round_obj.current_state = "DISPUTE_UNDER_REVIEW"  # type: ignore
+    try:
+        transition_round(
+            db=db,
+            round_obj=round_obj,
+            new_state="DISPUTE_UNDER_REVIEW",
+            actor_id=current_user.user_id,  # type: ignore
+            event_type="DISPUTE_UNDER_REVIEW",
+            details=f"Dispute {dispute.dispute_id} moved to review"
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error)
+        )
 
     db.commit()
     db.refresh(dispute)
@@ -162,18 +180,23 @@ def resolve_dispute(
             detail="Only the chit group creator can resolve disputes"
         )
 
-    if not is_valid_transition(
-        round_obj.current_state,  # type: ignore
-        "DISPUTE_RESOLVED"
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Dispute cannot be resolved from current state"
-        )
-
     dispute.status = "RESOLVED"  # type: ignore
     dispute.resolution = resolution_data.resolution  # type: ignore
-    round_obj.current_state = "DISPUTE_RESOLVED"  # type: ignore
+    
+    try:
+        transition_round(
+            db=db,
+            round_obj=round_obj,
+            new_state="DISPUTE_RESOLVED",
+            actor_id=current_user.user_id,  # type: ignore
+            event_type="DISPUTE_RESOLVED",
+            details=resolution_data.resolution
+        )   
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error)
+        )
 
     db.commit()
     db.refresh(dispute)

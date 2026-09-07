@@ -1,10 +1,11 @@
 from pydantic import BaseModel
 from decimal import Decimal
 from datetime import datetime
+from pydantic import BaseModel, Field
 
 
 class BidCreate(BaseModel):
-    bid_amount: Decimal
+    bid_amount: Decimal = Field(gt=0)
 
 
 class BidResponse(BaseModel):

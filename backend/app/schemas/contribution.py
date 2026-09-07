@@ -1,11 +1,12 @@
 from pydantic import BaseModel
 from decimal import Decimal
 from datetime import datetime
+from pydantic import BaseModel, Field
 
 
 class ContributionCreate(BaseModel):
-    amount: Decimal
-    payment_reference: str
+    amount: Decimal = Field(gt=0) 
+    payment_reference: str = Field(min_length=2, max_length=100) 
 
 
 class ContributionResponse(BaseModel):

@@ -131,3 +131,38 @@ def verify_contribution(
     db.refresh(contribution)
 
     return contribution
+
+@router.get(
+    "/{round_id}/contributions",
+    response_model=list[ContributionResponse]
+)
+def get_contributions(
+    round_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    round_obj = db.query(Round).filter(
+        Round.round_id == round_id
+    ).first()
+
+    if not round_obj:
+        raise HTTPException(
+            status_code=404,
+            detail="Round not found"
+        )
+
+    membership = db.query(Membership).filter(
+        Membership.chit_id == round_obj.chit_id,
+        Membership.user_id == current_user.user_id,
+        Membership.status == "ACTIVE"
+    ).first()
+
+    if not membership:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not a member of this chit group"
+        )
+
+    return db.query(Contribution).filter(
+        Contribution.round_id == round_id
+    ).all()

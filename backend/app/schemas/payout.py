@@ -1,11 +1,15 @@
 from pydantic import BaseModel
 from decimal import Decimal
 from typing import Optional
+from pydantic import BaseModel, Field
 
 
 class PayoutCreate(BaseModel):
-    amount: Decimal
-    payment_reference: Optional[str] = None
+    amount: Decimal = Field(gt=0)
+    payment_reference: Optional[str] = Field(
+        default=None,
+        max_length=100
+    )
 
 
 class PayoutResponse(BaseModel):

@@ -10,6 +10,7 @@ from app.models.bid import Bid
 from app.schemas.bid import BidCreate, BidResponse
 from app.core.security import get_current_user
 from app.models.chit_group import ChitGroup
+from app.state_machine.round_state_machine import transition_round
 
 
 router = APIRouter(
@@ -136,9 +137,22 @@ def propose_result(
         )
 
     round_obj.winner_id = winning_bid.member_id  # type: ignore
-    round_obj.current_state = "RESULT_PROPOSED"  # type: ignore
-
     winning_bid.status = "WINNING"  # type: ignore
+
+    try:
+        transition_round(
+            db=db,
+            round_obj=round_obj,
+            new_state="RESULT_PROPOSED",
+            actor_id=current_user.user_id,  # type: ignore
+            event_type="RESULT_PROPOSED",
+            details=f"Winning bid {winning_bid.bid_id} selected"
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error)
+        )
 
     db.commit()
     db.refresh(round_obj)
@@ -151,3 +165,40 @@ def propose_result(
         "winning_bid_amount": str(winning_bid.bid_amount),
         "current_state": round_obj.current_state
     }
+
+@router.get(
+    "/{round_id}/bids",
+    response_model=list[BidResponse]
+)
+def get_bids(
+    round_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    round_obj = db.query(Round).filter(
+        Round.round_id == round_id
+    ).first()
+
+    if not round_obj:
+        raise HTTPException(
+            status_code=404,
+            detail="Round not found"
+        )
+
+    membership = db.query(Membership).filter(
+        Membership.chit_id == round_obj.chit_id,
+        Membership.user_id == current_user.user_id,
+        Membership.status == "ACTIVE"
+    ).first()
+
+    if not membership:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not a member of this chit group"
+        )
+
+    return db.query(Bid).filter(
+        Bid.round_id == round_id
+    ).order_by(
+        Bid.timestamp.asc()
+    ).all()

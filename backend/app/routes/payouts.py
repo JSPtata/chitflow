@@ -8,7 +8,7 @@ from app.models.chit_group import ChitGroup
 from app.models.payout import Payout
 from app.schemas.payout import PayoutCreate, PayoutResponse
 from app.core.security import get_current_user
-from app.state_machine.round_state_machine import is_valid_transition
+from app.state_machine.round_state_machine import transition_round
 
 
 router = APIRouter(
@@ -83,7 +83,20 @@ def create_payout(
         payment_reference=payout_data.payment_reference
     )
 
-    round_obj.current_state = "PAYOUT_PENDING"  # type: ignore
+    try:
+        transition_round(
+            db=db,
+            round_obj=round_obj,
+            new_state="PAYOUT_PENDING",
+            actor_id=current_user.user_id,  # type: ignore
+            event_type="PAYOUT_PENDING",
+            details=f"Payout created for winner {round_obj.winner_id}"
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error)
+        )
 
     db.add(new_payout)
     db.commit()
@@ -137,17 +150,22 @@ def verify_payout(
             detail="Only the chit group creator can verify payout"
         )
 
-    if not is_valid_transition(
-        round_obj.current_state,  # type: ignore
-        "PAYOUT_VERIFICATION"
-    ):
+    payout.payout_status = "VERIFIED"  # type: ignore
+    
+    try:
+        transition_round(
+            db=db,
+            round_obj=round_obj,
+            new_state="PAYOUT_VERIFICATION",
+            actor_id=current_user.user_id,  # type: ignore
+            event_type="PAYOUT_VERIFIED",
+            details=f"Payout {payout.payout_id} verified"
+        )
+    except ValueError as error:
         raise HTTPException(
             status_code=400,
-            detail="Payout cannot be verified from current state"
+            detail=str(error)
         )
-
-    payout.payout_status = "VERIFIED"  # type: ignore
-    round_obj.current_state = "PAYOUT_VERIFICATION"  # type: ignore
 
     db.commit()
     db.refresh(payout)

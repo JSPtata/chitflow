@@ -26,6 +26,16 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
             status_code=400,
             detail="Email already registered"
         )
+    
+    existing_phone = db.query(User).filter(
+        User.phone == user.phone
+    ).first()
+
+    if existing_phone:
+        raise HTTPException(
+            status_code=400,
+            detail="Phone number already registered"
+        )
 
     hashed_password = bcrypt.hashpw(
         user.password.encode("utf-8"),
