@@ -1,0 +1,106 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap");
+
+:root {
+  font-family: "Manrope", sans-serif;
+
+  color: #17233c;
+  background: #f5f8fc;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+
+  --bg: #f5f8fc;
+  --surface: #ffffff;
+  --surface-soft: #f8fbff;
+
+  --text: #17233c;
+  --muted: #71809c;
+
+  --green: #15966f;
+  --green-soft: #e6f7f0;
+
+  --blue: #3f7fdc;
+  --blue-soft: #eaf3ff;
+
+  --purple: #725bd8;
+  --purple-soft: #f0edff;
+
+  --yellow: #d99824;
+  --yellow-soft: #fff6dc;
+
+  --red: #c75151;
+  --red-soft: #fff0f0;
+
+  --border: #e3eaf3;
+
+  --shadow:
+    0 16px 45px rgba(53, 76, 111, 0.08);
+
+  --shadow-small:
+    0 8px 24px rgba(53, 76, 111, 0.07);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+
+  background:
+    radial-gradient(circle at 10% 10%,
+      rgba(105, 171, 255, 0.1),
+      transparent 25%),
+    radial-gradient(circle at 90% 20%,
+      rgba(92, 211, 165, 0.11),
+      transparent 24%),
+    var(--bg);
+
+  color: var(--text);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+code,
+.state-code,
+.mono {
+  font-family: "DM Mono", monospace;
+}
+
+::selection {
+  background: #cdeee2;
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cfd8e6;
+  border-radius: 20px;
+}
