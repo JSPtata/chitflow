@@ -6,11 +6,16 @@ import {
 } from "react-router-dom";
 
 import "./App.css";
+import "./chitflow-theme.css";
 
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ChitDetails from "./pages/ChitDetails";
 import RoundDetails from "./pages/RoundDetails";
+import Members from "./pages/Members";
+import Profile from "./pages/Profile";
+import Register from "./pages/Register";
+import ChitGroups from "./pages/ChitGroups";
 
 function ProtectedRoute({
   children,
@@ -34,6 +39,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+
         <Route
           path="/"
           element={<Login />}
@@ -75,6 +81,39 @@ function App() {
             />
           }
         />
+
+        <Route
+          path="/members"
+          element={
+            <ProtectedRoute>
+              <Members />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/register"
+          element={<Register />}
+        />
+
+        <Route
+          path="/chit-groups"
+          element={
+            <ProtectedRoute>
+              <ChitGroups />
+            </ProtectedRoute>
+          }
+        />
+
       </Routes>
     </BrowserRouter>
   );
