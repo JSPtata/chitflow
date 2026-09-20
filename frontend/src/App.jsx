@@ -1,32 +1,38 @@
 import {
-  BrowserRouter,
   Navigate,
   Route,
   Routes,
 } from "react-router-dom";
 
+import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
+import ChitGroups from "./pages/ChitGroups";
+import Members from "./pages/Members";
+import Profile from "./pages/Profile";
+import ChitDetails from "./pages/ChitDetails";
+import RoundDetails from "./pages/RoundDetails";
+
+import GuidedHelp
+  from "./components/GuidedHelp";
+
 import "./App.css";
 import "./chitflow-theme.css";
 
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import ChitDetails from "./pages/ChitDetails";
-import RoundDetails from "./pages/RoundDetails";
-import Members from "./pages/Members";
-import Profile from "./pages/Profile";
-import Register from "./pages/Register";
-import ChitGroups from "./pages/ChitGroups";
 
 function ProtectedRoute({
   children,
 }) {
   const token =
-    localStorage.getItem("token");
+    localStorage.getItem(
+      "token"
+    );
 
   if (!token) {
     return (
       <Navigate
-        to="/"
+        to="/login"
         replace
       />
     );
@@ -35,15 +41,34 @@ function ProtectedRoute({
   return children;
 }
 
+
 function App() {
   return (
-    <BrowserRouter>
+    <>
+
       <Routes>
 
         <Route
           path="/"
-          element={<Login />}
+          element={
+            <Landing />
+          }
         />
+
+        <Route
+          path="/login"
+          element={
+            <Login />
+          }
+        />
+
+        <Route
+          path="/register"
+          element={
+            <Register />
+          }
+        />
+
 
         <Route
           path="/dashboard"
@@ -55,30 +80,11 @@ function App() {
         />
 
         <Route
-          path="/chits/:chitId"
+          path="/chit-groups"
           element={
             <ProtectedRoute>
-              <ChitDetails />
+              <ChitGroups />
             </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/rounds/:roundId"
-          element={
-            <ProtectedRoute>
-              <RoundDetails />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="*"
-          element={
-            <Navigate
-              to="/"
-              replace
-            />
           }
         />
 
@@ -101,22 +107,42 @@ function App() {
         />
 
         <Route
-          path="/register"
-          element={<Register />}
-        />
-
-        <Route
-          path="/chit-groups"
+          path="/chits/:chitId"
           element={
             <ProtectedRoute>
-              <ChitGroups />
+              <ChitDetails />
             </ProtectedRoute>
           }
         />
 
+        <Route
+          path="/rounds/:roundId"
+          element={
+            <ProtectedRoute>
+              <RoundDetails />
+            </ProtectedRoute>
+          }
+        />
+
+
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to="/"
+              replace
+            />
+          }
+        />
+
       </Routes>
-    </BrowserRouter>
+
+
+      <GuidedHelp />
+
+    </>
   );
 }
+
 
 export default App;

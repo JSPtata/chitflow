@@ -2,11 +2,11 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
-  CheckCircle2,
+  CircleDollarSign,
   Clock3,
-  Coins,
   Crown,
-  Layers3,
+  Gavel,
+  IndianRupee,
   Plus,
   ShieldCheck,
   UserPlus,
@@ -17,6 +17,7 @@ import {
 
 import {
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -25,38 +26,110 @@ import {
   useParams,
 } from "react-router-dom";
 
-import api from "../api/api";
-import AppShell from "../components/AppShell";
+import {
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+} from "recharts";
+
+import api from "@/api/api";
+
+import AppShell from "@/components/AppShell";
+
+import {
+  Badge,
+} from "@/components/ui/badge";
+
+import {
+  Button,
+} from "@/components/ui/button";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+import {
+  Input,
+} from "@/components/ui/input";
+
+import {
+  Label,
+} from "@/components/ui/label";
+
+
+const ROUND_SEQUENCE = [
+  "ROUND_CREATED",
+  "CONTRIBUTION_OPEN",
+  "CONTRIBUTION_VERIFICATION",
+  "BIDDING_OPEN",
+  "BIDDING_CLOSED",
+  "RESULT_PROPOSED",
+  "CHALLENGE_OPEN",
+  "RESULT_CONFIRMED",
+  "PAYOUT_PENDING",
+  "PAYOUT_VERIFICATION",
+  "ROUND_SETTLED",
+];
+
 
 function ChitDetails() {
-  const { chitId } = useParams();
-  const navigate = useNavigate();
+  const {
+    chitId,
+  } = useParams();
 
-  const [user, setUser] =
-    useState(null);
+  const navigate =
+    useNavigate();
 
-  const [chit, setChit] =
-    useState(null);
 
-  const [members, setMembers] =
-    useState([]);
+  const [
+    user,
+    setUser,
+  ] = useState(null);
 
-  const [rounds, setRounds] =
-    useState([]);
+  const [
+    chit,
+    setChit,
+  ] = useState(null);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [
+    rounds,
+    setRounds,
+  ] = useState([]);
 
-  const [error, setError] =
-    useState("");
+  const [
+    members,
+    setMembers,
+  ] = useState([]);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+  const [
+    success,
+    setSuccess,
+  ] = useState("");
+
 
   /* =====================================================
      ADD MEMBER
   ===================================================== */
 
   const [
-    showAddMember,
-    setShowAddMember,
+    memberOpen,
+    setMemberOpen,
   ] = useState(false);
 
   const [
@@ -65,22 +138,18 @@ function ChitDetails() {
   ] = useState("");
 
   const [
-    addMemberLoading,
-    setAddMemberLoading,
+    addingMember,
+    setAddingMember,
   ] = useState(false);
 
-  const [
-    memberMessage,
-    setMemberMessage,
-  ] = useState("");
 
   /* =====================================================
      CREATE ROUND
   ===================================================== */
 
   const [
-    showCreateRound,
-    setShowCreateRound,
+    roundOpen,
+    setRoundOpen,
   ] = useState(false);
 
   const [
@@ -89,177 +158,470 @@ function ChitDetails() {
   ] = useState("");
 
   const [
-    createLoading,
-    setCreateLoading,
+    creatingRound,
+    setCreatingRound,
   ] = useState(false);
 
-  const [
-    createMessage,
-    setCreateMessage,
-  ] = useState("");
 
   /* =====================================================
-     LOAD GROUP DATA
+     LOAD DATA
   ===================================================== */
 
-  const fetchData = async () => {
-    try {
-      const [
-        userResponse,
-        chitResponse,
-        roundsResponse,
-        membersResponse,
-      ] = await Promise.all([
-        api.get("/users/me"),
+  const loadData =
+    async () => {
+      try {
+        setLoading(true);
 
-        api.get(
-          `/chit-groups/${chitId}`
-        ),
+        const [
+          userResponse,
+          chitResponse,
+          roundsResponse,
+          membersResponse,
+        ] = await Promise.all([
+          api.get(
+            "/users/me"
+          ),
 
-        api.get(
-          `/chit-groups/${chitId}/rounds`
-        ),
+          api.get(
+            `/chit-groups/${chitId}`
+          ),
 
-        api.get(
-          `/chit-groups/${chitId}/members`
-        ),
-      ]);
+          api.get(
+            `/chit-groups/${chitId}/rounds`
+          ),
 
-      setUser(
-        userResponse.data
-      );
+          api.get(
+            `/chit-groups/${chitId}/members`
+          ),
+        ]);
 
-      setChit(
-        chitResponse.data
-      );
-
-      setRounds(
-        roundsResponse.data
-      );
-
-      setMembers(
-        membersResponse.data
-      );
-
-      setError("");
-    } catch (error) {
-      if (
-        error.response?.status ===
-        401
-      ) {
-        localStorage.removeItem(
-          "token"
+        setUser(
+          userResponse.data
         );
 
-        navigate("/");
-      } else {
+        setChit(
+          chitResponse.data
+        );
+
+        setRounds(
+          roundsResponse.data ||
+          []
+        );
+
+        setMembers(
+          membersResponse.data ||
+          []
+        );
+
+        setError("");
+      } catch (error) {
+        const status =
+          error.response?.status;
+
+        if (
+          status === 401 ||
+          status === 403
+        ) {
+          localStorage.removeItem(
+            "token"
+          );
+
+          navigate(
+            "/login"
+          );
+
+          return;
+        }
+
         setError(
           error.response
             ?.data
             ?.detail ||
-            "Unable to load chit group"
+            error.message ||
+            "Unable to load chit group."
         );
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
 
   useEffect(() => {
-    fetchData();
+    loadData();
   }, [chitId]);
 
+
   /* =====================================================
-     DERIVED VALUES
+     HELPERS
+  ===================================================== */
+
+  const money =
+    (value) =>
+      Number(
+        value || 0
+      ).toLocaleString(
+        "en-IN"
+      );
+
+
+  const getState =
+    (round) =>
+      String(
+        round.current_state ||
+        round.state ||
+        "ROUND_CREATED"
+      );
+
+
+  const readableState =
+    (state) =>
+      String(
+        state || ""
+      )
+        .replaceAll(
+          "_",
+          " "
+        )
+        .toLowerCase()
+        .replace(
+          /\b\w/g,
+          (letter) =>
+            letter.toUpperCase()
+        );
+
+
+  const getMemberId =
+    (member) =>
+      member.user_id ||
+      member.member_id ||
+      member.id ||
+      "—";
+
+
+  const getMemberName =
+    (member) =>
+      member.name ||
+      member.user_name ||
+      member.full_name ||
+      `User #${getMemberId(
+        member
+      )}`;
+
+
+  const memberStatus =
+    (member) =>
+      String(
+        member.status ||
+        member.membership_status ||
+        "ACTIVE"
+      ).toUpperCase();
+
+
+  const isActiveMember =
+    (member) =>
+      ![
+        "INACTIVE",
+        "REMOVED",
+        "SUSPENDED",
+      ].includes(
+        memberStatus(
+          member
+        )
+      );
+
+
+  /* =====================================================
+     GROUP VALUES
   ===================================================== */
 
   const isCreator =
-    user &&
-    chit &&
-    Number(user.user_id) ===
-      Number(chit.created_by);
+    Number(
+      chit?.created_by
+    ) ===
+    Number(
+      user?.user_id
+    );
+
 
   const activeMembers =
     members.filter(
-      (member) =>
-        member.status ===
-        "ACTIVE"
+      isActiveMember
     );
 
-  const remainingSlots =
-    Math.max(
-      Number(
-        chit?.number_of_members ||
-          0
-      ) - activeMembers.length,
-      0
+
+  const capacity =
+    Number(
+      chit?.number_of_members ||
+        0
     );
 
-  const validRoundNumbers =
-    rounds
-      .map((round) =>
-        Number(
-          round.round_number
+
+  const capacityPercent =
+    capacity > 0
+      ? Math.min(
+          100,
+          (
+            activeMembers.length /
+            capacity
+          ) *
+            100
         )
-      )
-      .filter(
-        (number) =>
-          number > 0
-      );
+      : 0;
+
+
+  const contribution =
+    Number(
+      chit?.contribution_amount ||
+        0
+    );
+
+
+  const totalPool =
+    Number(
+      chit?.total_amount ||
+        contribution *
+          capacity ||
+        0
+    );
+
+
+  const duration =
+    Number(
+      chit?.duration ||
+        0
+    );
+
+
+  /* =====================================================
+     ROUNDS
+  ===================================================== */
+
+  const sortedRounds =
+    useMemo(
+      () =>
+        [...rounds].sort(
+          (a, b) =>
+            Number(
+              b.round_number ||
+                0
+            ) -
+            Number(
+              a.round_number ||
+                0
+            )
+        ),
+      [rounds]
+    );
+
+
+  const latestRound =
+    sortedRounds[0] ||
+    null;
+
 
   const nextRoundNumber =
-    validRoundNumbers.length
+    rounds.length > 0
       ? Math.max(
-          ...validRoundNumbers
+          ...rounds.map(
+            (round) =>
+              Number(
+                round.round_number ||
+                  0
+              )
+          )
         ) + 1
       : 1;
 
-  const completedRounds =
+
+  const settledRounds =
     rounds.filter(
       (round) =>
-        round.current_state ===
+        getState(
+          round
+        ) ===
         "ROUND_SETTLED"
-    ).length;
+    );
 
-  const activeRounds =
+
+  const biddingRounds =
     rounds.filter(
       (round) =>
-        round.current_state !==
-          "ROUND_SETTLED" &&
-        round.current_state !==
-          "ROUND_CREATED"
-    ).length;
+        [
+          "BIDDING_OPEN",
+          "BIDDING_CLOSED",
+        ].includes(
+          getState(
+            round
+          )
+        )
+    );
 
-  const upcomingRounds =
+
+  const attentionRounds =
     rounds.filter(
-      (round) =>
-        round.current_state ===
-        "ROUND_CREATED"
-    ).length;
+      (round) => {
+        const state =
+          getState(
+            round
+          );
+
+        return (
+          state ===
+            "CHALLENGE_OPEN" ||
+          state.includes(
+            "DISPUTE"
+          ) ||
+          state ===
+            "PAYMENT_LATE" ||
+          state ===
+            "PAYMENT_DEFAULT" ||
+          state ===
+            "PAYOUT_DISPUTED"
+        );
+      }
+    );
+
+
+  const otherActiveRounds =
+    rounds.filter(
+      (round) => {
+        const state =
+          getState(
+            round
+          );
+
+        return (
+          state !==
+            "ROUND_SETTLED" &&
+          ![
+            "BIDDING_OPEN",
+            "BIDDING_CLOSED",
+          ].includes(
+            state
+          ) &&
+          state !==
+            "CHALLENGE_OPEN" &&
+          !state.includes(
+            "DISPUTE"
+          ) &&
+          state !==
+            "PAYMENT_LATE" &&
+          state !==
+            "PAYMENT_DEFAULT" &&
+          state !==
+            "PAYOUT_DISPUTED"
+        );
+      }
+    );
+
+
+  const roundHealthData = [
+    {
+      name:
+        "Active",
+      value:
+        otherActiveRounds.length,
+    },
+    {
+      name:
+        "Bidding",
+      value:
+        biddingRounds.length,
+    },
+    {
+      name:
+        "Attention",
+      value:
+        attentionRounds.length,
+    },
+    {
+      name:
+        "Settled",
+      value:
+        settledRounds.length,
+    },
+  ].filter(
+    (item) =>
+      item.value > 0
+  );
+
+
+  const pieColors = [
+    "#2563eb",
+    "#7c3aed",
+    "#f59e0b",
+    "#16a34a",
+  ];
+
+
+  /* =====================================================
+     LATEST ROUND PROGRESS
+  ===================================================== */
+
+  const latestState =
+    latestRound
+      ? getState(
+          latestRound
+        )
+      : null;
+
+
+  const normalizedLatestState =
+    latestState?.includes(
+      "DISPUTE"
+    )
+      ? "CHALLENGE_OPEN"
+      : latestState ===
+          "PAYMENT_LATE" ||
+        latestState ===
+          "PAYMENT_DEFAULT"
+        ? "CONTRIBUTION_VERIFICATION"
+        : latestState ===
+            "PAYOUT_DISPUTED"
+          ? "PAYOUT_VERIFICATION"
+          : latestState;
+
+
+  const latestStateIndex =
+    normalizedLatestState
+      ? ROUND_SEQUENCE.indexOf(
+          normalizedLatestState
+        )
+      : -1;
+
+
+  const lifecycleProgress =
+    latestStateIndex >= 0
+      ? (
+          latestStateIndex /
+          (ROUND_SEQUENCE.length -
+            1)
+        ) *
+        100
+      : 0;
+
 
   /* =====================================================
      ADD MEMBER
   ===================================================== */
 
-  const handleAddMember =
-    async (e) => {
-      e.preventDefault();
-
-      setMemberMessage("");
+  const addMember =
+    async (
+      event
+    ) => {
+      event.preventDefault();
 
       if (!newUserId) {
-        setMemberMessage(
-          "Enter a registered user ID."
+        setError(
+          "Enter the registered user ID."
         );
 
         return;
       }
 
-      setAddMemberLoading(
-        true
-      );
-
       try {
+        setAddingMember(true);
+
         await api.post(
           `/chit-groups/${chitId}/members`,
           {
@@ -270,2282 +632,1704 @@ function ChitDetails() {
           }
         );
 
-        setMemberMessage(
+        setNewUserId("");
+
+        setMemberOpen(
+          false
+        );
+
+        setSuccess(
           "Member added successfully."
         );
 
-        setNewUserId("");
+        setError("");
 
-        await fetchData();
+        await loadData();
       } catch (error) {
-        setMemberMessage(
+        setError(
           error.response
             ?.data
             ?.detail ||
-            "Unable to add member"
+            "Unable to add member."
         );
       } finally {
-        setAddMemberLoading(
-          false
-        );
+        setAddingMember(false);
       }
     };
+
 
   /* =====================================================
      CREATE ROUND
   ===================================================== */
 
-  const handleCreateRound =
-    async (e) => {
-      e.preventDefault();
-
-      setCreateLoading(
-        true
-      );
-
-      setCreateMessage(
-        ""
-      );
+  const createRound =
+    async (
+      event
+    ) => {
+      event.preventDefault();
 
       try {
-        await api.post(
-          `/chit-groups/${chitId}/rounds`,
-          {
-            round_number:
-              nextRoundNumber,
+        setCreatingRound(true);
 
-            due_date:
-              dueDate
-                ? new Date(
-                    dueDate
-                  ).toISOString()
-                : null,
-          }
-        );
+        const response =
+          await api.post(
+            `/chit-groups/${chitId}/rounds`,
+            {
+              round_number:
+                nextRoundNumber,
 
-        setCreateMessage(
-          `Round ${nextRoundNumber} created successfully.`
-        );
+              due_date:
+                dueDate
+                  ? new Date(
+                      dueDate
+                    ).toISOString()
+                  : null,
+            }
+          );
 
         setDueDate("");
 
-        setShowCreateRound(
+        setRoundOpen(
           false
         );
 
-        await fetchData();
+        setSuccess(
+          `Round ${nextRoundNumber} created successfully.`
+        );
+
+        setError("");
+
+        const roundId =
+          response.data
+            ?.round_id;
+
+        if (roundId) {
+          navigate(
+            `/rounds/${roundId}`
+          );
+
+          return;
+        }
+
+        await loadData();
       } catch (error) {
-        setCreateMessage(
+        setError(
           error.response
             ?.data
             ?.detail ||
-            "Unable to create round"
+            "Unable to create round."
         );
       } finally {
-        setCreateLoading(
-          false
-        );
+        setCreatingRound(false);
       }
     };
 
-  /* =====================================================
-     HELPERS
-  ===================================================== */
-
-  const formatDate =
-    (value) => {
-      if (!value) {
-        return "Not set";
-      }
-
-      const date =
-        new Date(value);
-
-      if (
-        Number.isNaN(
-          date.getTime()
-        )
-      ) {
-        return "Not set";
-      }
-
-      return date.toLocaleDateString(
-        "en-IN",
-        {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }
-      );
-    };
-
-  const formatState =
-    (state) => {
-      if (!state) {
-        return "UNKNOWN";
-      }
-
-      return state.replaceAll(
-        "_",
-        " "
-      );
-    };
-
-  const getStateClass =
-    (state) => {
-      if (
-        state ===
-        "ROUND_SETTLED"
-      ) {
-        return "green";
-      }
-
-      if (
-        state ===
-        "ROUND_CREATED"
-      ) {
-        return "purple";
-      }
-
-      if (
-        state?.includes(
-          "DISPUTE"
-        ) ||
-        state?.includes(
-          "DEFAULT"
-        )
-      ) {
-        return "yellow";
-      }
-
-      return "blue";
-    };
 
   if (loading) {
     return (
-      <div className="auth-page">
-        Loading chit group...
+      <div className="flex min-h-screen items-center justify-center bg-[#f4f5f7] text-[16px] text-black/50">
+        Loading Chit Group...
       </div>
     );
   }
+
+
+  if (!chit) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f4f5f7]">
+        Chit group not found.
+      </div>
+    );
+  }
+
 
   return (
     <AppShell
       user={user}
       active="chits"
     >
-      <style>{`
 
-        /* =================================================
-           BACK BUTTON
-        ================================================= */
+      <main className="space-y-5">
 
-        .cf-back-button {
-          min-height: 42px;
-
-          padding: 0 15px;
-
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-
-          border:
-            1px solid
-            var(--border);
-
-          border-radius: 12px;
-
-          background: white;
-
-          color: #536970;
-
-          font-size: 13px;
-          font-weight: 700;
-
-          cursor: pointer;
-
-          transition: 0.2s ease;
-        }
-
-        .cf-back-button:hover {
-          color:
-            var(--green-dark);
-
-          border-color:
-            #bddbd2;
-
-          transform:
-            translateX(-2px);
-        }
-
-        /* =================================================
-           HERO
-        ================================================= */
-
-        .chit-detail-hero {
-          position: relative;
-
-          overflow: hidden;
-
-          min-height: 260px;
-
-          margin-top: 20px;
-
-          padding: 38px;
-
-          display: flex;
-          align-items: center;
-
-          border-radius: 30px;
-
-          background:
-            radial-gradient(
-              circle at 87% 20%,
-              rgba(
-                83,
-                224,
-                180,
-                0.22
-              ),
-              transparent 25%
-            ),
-            radial-gradient(
-              circle at 65% 110%,
-              rgba(
-                49,
-                173,
-                197,
-                0.15
-              ),
-              transparent 38%
-            ),
-            linear-gradient(
-              140deg,
-              #0b3039,
-              #071e27
-            );
-
-          color: white;
-
-          box-shadow:
-            0 22px 55px
-            rgba(
-              8,
-              34,
-              43,
-              0.14
-            );
-        }
-
-        .chit-detail-hero::after {
-          content: "₹";
-
-          position: absolute;
-
-          right: 75px;
-          top: 17px;
-
-          color:
-            rgba(
-              91,
-              224,
-              183,
-              0.11
-            );
-
-          font-family:
-            var(--font-mono);
-
-          font-size: 170px;
-          font-weight: 700;
-        }
-
-        .chit-detail-copy {
-          position: relative;
-          z-index: 2;
-
-          max-width: 680px;
-        }
-
-        .chit-detail-tags {
-          display: flex;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 9px;
-        }
-
-        .chit-detail-id {
-          padding:
-            7px 11px;
-
-          border:
-            1px solid
-            rgba(
-              255,
-              255,
-              255,
-              0.10
-            );
-
-          border-radius:
-            999px;
-
-          background:
-            rgba(
-              255,
-              255,
-              255,
-              0.05
-            );
-
-          color: #a4bec5;
-
-          font-family:
-            var(--font-mono);
-
-          font-size: 11px;
-          font-weight: 700;
-        }
-
-        .chit-owner {
-          padding:
-            7px 11px;
-
-          display:
-            inline-flex;
-
-          align-items: center;
-          gap: 6px;
-
-          border:
-            1px solid
-            rgba(
-              91,
-              223,
-              183,
-              0.17
-            );
-
-          border-radius:
-            999px;
-
-          background:
-            rgba(
-              52,
-              194,
-              151,
-              0.10
-            );
-
-          color: #69dfbb;
-
-          font-size: 11px;
-          font-weight: 700;
-        }
-
-        .chit-detail-hero h1 {
-          margin:
-            18px 0 0;
-
-          color: white;
-
-          font-size:
-            clamp(
-              37px,
-              4vw,
-              52px
-            );
-
-          line-height: 1;
-
-          letter-spacing:
-            -0.05em;
-        }
-
-        .chit-detail-hero p {
-          max-width: 590px;
-
-          margin:
-            14px 0 0;
-
-          color: #96b0b7;
-
-          font-size: 15px;
-          line-height: 1.7;
-        }
-
-        /* =================================================
-           SECTION
-        ================================================= */
-
-        .group-section {
-          margin-top: 24px;
-
-          padding: 27px;
-
-          border:
-            1px solid
-            var(--border);
-
-          border-radius: 26px;
-
-          background: white;
-
-          box-shadow:
-            var(--shadow);
-        }
-
-        .group-section-header {
-          display: flex;
-
-          align-items: center;
-
-          justify-content:
-            space-between;
-
-          gap: 20px;
-
-          margin-bottom: 21px;
-        }
-
-        .group-section-title {
-          display: flex;
-
-          align-items: center;
-
-          gap: 13px;
-        }
-
-        .group-section-icon {
-          width: 47px;
-          height: 47px;
-
-          display: grid;
-
-          place-items: center;
-
-          flex: 0 0 auto;
-
-          border-radius: 15px;
-
-          background:
-            var(--green-light);
-
-          color:
-            var(--green-dark);
-        }
-
-        .group-section-title h2 {
-          margin: 0;
-
-          color: #173139;
-
-          font-size: 20px;
-        }
-
-        .group-section-title p {
-          margin:
-            5px 0 0;
-
-          color:
-            var(--muted);
-
-          font-size: 13px;
-        }
-
-        /* =================================================
-           MEMBER SUMMARY
-        ================================================= */
-
-        .member-summary-grid {
-          display: grid;
-
-          grid-template-columns:
-            repeat(
-              3,
-              minmax(
-                0,
-                1fr
-              )
-            );
-
-          gap: 13px;
-        }
-
-        .member-summary {
-          padding: 18px;
-
-          display: flex;
-
-          align-items: center;
-
-          gap: 13px;
-
-          border:
-            1px solid
-            var(--border);
-
-          border-radius: 17px;
-
-          background:
-            #fbfcfc;
-        }
-
-        .member-summary-icon {
-          width: 42px;
-          height: 42px;
-
-          display: grid;
-
-          place-items: center;
-
-          border-radius: 13px;
-
-          background:
-            var(--green-light);
-
-          color:
-            var(--green-dark);
-        }
-
-        .member-summary strong {
-          display: block;
-
-          font-family:
-            var(--font-mono);
-
-          color: #183039;
-
-          font-size: 22px;
-        }
-
-        .member-summary span {
-          display: block;
-
-          margin-top: 3px;
-
-          color:
-            var(--muted);
-
-          font-size: 12px;
-        }
-
-        /* =================================================
-           ADD MEMBER FORM
-        ================================================= */
-
-        .add-member-panel {
-          margin-top: 18px;
-
-          padding: 20px;
-
-          border:
-            1px solid
-            #d8e8e3;
-
-          border-radius: 18px;
-
-          background:
-            linear-gradient(
-              145deg,
-              #f3faf7,
-              #ffffff
-            );
-        }
-
-        .add-member-panel h3 {
-          margin: 0;
-
-          color: #183139;
-
-          font-size: 17px;
-        }
-
-        .add-member-panel p {
-          margin:
-            6px 0 16px;
-
-          color:
-            var(--muted);
-
-          font-size: 13px;
-        }
-
-        .add-member-form {
-          display: grid;
-
-          grid-template-columns:
-            minmax(
-              200px,
-              1fr
-            )
-            auto;
-
-          gap: 12px;
-
-          align-items: end;
-        }
-
-        .add-member-form label {
-          display: flex;
-
-          flex-direction: column;
-
-          gap: 8px;
-        }
-
-        .add-member-form label span {
-          font-family:
-            var(--font-mono);
-
-          color: #687c82;
-
-          font-size: 11px !important;
-          font-weight: 700;
-        }
-
-        .add-member-form input {
-          width: 100%;
-          height: 46px;
-
-          padding:
-            0 13px;
-
-          border:
-            1px solid
-            #d8e4e6;
-
-          border-radius: 12px;
-
-          background: white;
-
-          color: #173139;
-
-          font-size: 15px !important;
-
-          outline: none;
-        }
-
-        /* =================================================
-           MEMBERS LIST
-        ================================================= */
-
-        .group-members-list {
-          margin-top: 18px;
-
-          display: grid;
-
-          gap: 10px;
-        }
-
-        .group-member-row {
-          min-height: 78px;
-
-          padding: 14px 16px;
-
-          display: grid;
-
-          grid-template-columns:
-            48px
-            minmax(
-              0,
-              1fr
-            )
-            minmax(
-              130px,
-              0.5fr
-            )
-            minmax(
-              130px,
-              0.5fr
-            );
-
-          align-items: center;
-
-          gap: 14px;
-
-          border:
-            1px solid
-            var(--border);
-
-          border-radius: 16px;
-
-          background: white;
-        }
-
-        .member-number {
-          width: 45px;
-          height: 45px;
-
-          display: grid;
-
-          place-items: center;
-
-          border-radius: 14px;
-
-          background:
-            linear-gradient(
-              145deg,
-              #dff6ed,
-              #c9ebe1
-            );
-
-          color:
-            var(--green-dark);
-
-          font-family:
-            var(--font-mono);
-
-          font-size: 14px;
-          font-weight: 700;
-        }
-
-        .member-main strong {
-          display: block;
-
-          color: #183139;
-
-          font-size: 15px;
-        }
-
-        .member-main span {
-          display: block;
-
-          margin-top: 4px;
-
-          color:
-            var(--muted);
-
-          font-size: 12px;
-        }
-
-        .member-column span {
-          display: block;
-
-          font-family:
-            var(--font-mono);
-
-          color: #819197;
-
-          font-size: 10px;
-
-          font-weight: 700;
-
-          letter-spacing:
-            0.05em;
-        }
-
-        .member-column strong {
-          display: block;
-
-          margin-top: 5px;
-
-          color: #4e646b;
-
-          font-size: 12px;
-        }
-
-        /* =================================================
-           ROUND SUMMARY
-        ================================================= */
-
-        .round-summary-grid {
-          display: grid;
-
-          grid-template-columns:
-            repeat(
-              4,
-              minmax(
-                0,
-                1fr
-              )
-            );
-
-          gap: 13px;
-        }
-
-        .round-summary-item {
-          min-height: 100px;
-
-          padding: 17px;
-
-          display: flex;
-
-          align-items: center;
-
-          gap: 12px;
-
-          border:
-            1px solid
-            var(--border);
-
-          border-radius: 17px;
-
-          background: #fbfcfc;
-        }
-
-        .round-summary-item
-        svg {
-          color:
-            var(--green-dark);
-        }
-
-        .round-summary-item
-        strong {
-          display: block;
-
-          font-family:
-            var(--font-mono);
-
-          color: #183039;
-
-          font-size: 22px;
-        }
-
-        .round-summary-item
-        span {
-          display: block;
-
-          margin-top: 3px;
-
-          color:
-            var(--muted);
-
-          font-size: 12px;
-        }
-
-        /* =================================================
-           CREATE ROUND
-        ================================================= */
-
-        .create-round-panel {
-          margin-top: 18px;
-
-          padding: 20px;
-
-          border:
-            1px solid
-            #d7e8e2;
-
-          border-radius: 18px;
-
-          background:
-            linear-gradient(
-              145deg,
-              #f4faf8,
-              white
-            );
-        }
-
-        .create-round-top {
-          display: flex;
-
-          align-items: center;
-
-          justify-content:
-            space-between;
-
-          gap: 15px;
-
-          margin-bottom: 17px;
-        }
-
-        .create-round-top h3 {
-          margin: 0;
-
-          color: #173139;
-
-          font-size: 17px;
-        }
-
-        .create-round-top p {
-          margin:
-            5px 0 0;
-
-          color:
-            var(--muted);
-
-          font-size: 13px;
-        }
-
-        .round-close {
-          width: 38px;
-          height: 38px;
-
-          display: grid;
-
-          place-items: center;
-
-          border:
-            1px solid
-            var(--border);
-
-          border-radius: 11px;
-
-          background: white;
-
-          cursor: pointer;
-        }
-
-        .create-round-form {
-          display: grid;
-
-          grid-template-columns:
-            0.7fr
-            1fr
-            auto;
-
-          gap: 13px;
-
-          align-items: end;
-        }
-
-        .create-round-form label {
-          display: flex;
-
-          flex-direction: column;
-
-          gap: 8px;
-        }
-
-        .create-round-form
-        label span {
-          font-family:
-            var(--font-mono);
-
-          color: #687c82;
-
-          font-size: 11px !important;
-          font-weight: 700;
-        }
-
-        .create-round-form input {
-          height: 46px;
-
-          padding:
-            0 13px;
-
-          border:
-            1px solid
-            #d8e4e6;
-
-          border-radius: 12px;
-
-          background: white;
-
-          color: #173139;
-
-          font-size: 15px !important;
-
-          outline: none;
-        }
-
-        /* =================================================
-           ROUND LIST
-        ================================================= */
-
-        .group-round-list {
-          margin-top: 20px;
-
-          display: grid;
-
-          gap: 12px;
-        }
-
-        .group-round {
-          position: relative;
-
-          overflow: hidden;
-
-          min-height: 105px;
-
-          padding: 18px;
-
-          display: grid;
-
-          grid-template-columns:
-            66px
-            minmax(
-              0,
-              1fr
-            )
-            auto;
-
-          align-items: center;
-
-          gap: 17px;
-
-          border:
-            1px solid
-            var(--border);
-
-          border-radius: 18px;
-
-          transition:
-            0.2s ease;
-        }
-
-        .group-round::before {
-          content: "";
-
-          position: absolute;
-
-          left: 0;
-          top: 14px;
-          bottom: 14px;
-
-          width: 3px;
-
-          border-radius:
-            0 5px 5px 0;
-
-          background: #54b9ca;
-        }
-
-        .group-round:hover {
-          transform:
-            translateY(-2px);
-
-          border-color:
-            #cadeD9;
-
-          box-shadow:
-            0 10px 28px
-            rgba(
-              15,
-              43,
-              52,
-              0.07
-            );
-        }
-
-        .round-number {
-          width: 61px;
-          height: 61px;
-
-          display: flex;
-
-          flex-direction: column;
-
-          align-items: center;
-
-          justify-content: center;
-
-          border-radius: 16px;
-
-          background:
-            #f3f7f7;
-        }
-
-        .round-number span {
-          font-family:
-            var(--font-mono);
-
-          color: #859499;
-
-          font-size: 10px;
-
-          font-weight: 700;
-        }
-
-        .round-number strong {
-          font-family:
-            var(--font-mono);
-
-          color: #173139;
-
-          font-size: 21px;
-        }
-
-        .round-content h3 {
-          margin:
-            0 0 9px;
-
-          color: #173139;
-
-          font-size: 16px;
-        }
-
-        .round-meta {
-          display: flex;
-
-          flex-wrap: wrap;
-
-          gap: 12px 22px;
-        }
-
-        .round-meta span {
-          color:
-            var(--muted);
-
-          font-size: 12px;
-        }
-
-        .round-meta strong {
-          font-family:
-            var(--font-mono);
-
-          color: #50656b;
-
-          font-size: 11px;
-        }
-
-        .round-open {
-          min-height: 42px;
-
-          padding:
-            0 15px;
-
-          display: inline-flex;
-
-          align-items: center;
-
-          gap: 7px;
-
-          border:
-            1px solid
-            #cce0da;
-
-          border-radius: 11px;
-
-          background: white;
-
-          color:
-            var(--green-dark);
-
-          font-size: 12px;
-
-          font-weight: 700;
-
-          cursor: pointer;
-        }
-
-        /* =================================================
-           EMPTY STATE
-        ================================================= */
-
-        .group-empty {
-          margin-top: 18px;
-
-          padding:
-            42px 20px;
-
-          text-align: center;
-
-          border:
-            1px dashed
-            #d4e1e3;
-
-          border-radius: 18px;
-
-          background:
-            #fbfcfc;
-        }
-
-        .group-empty strong {
-          display: block;
-
-          color: #173139;
-
-          font-size: 15px;
-        }
-
-        .group-empty p {
-          margin:
-            7px 0 0;
-
-          color:
-            var(--muted);
-
-          font-size: 13px;
-        }
-
-        /* =================================================
-           SECURITY
-        ================================================= */
-
-        .group-security {
-          margin-top: 20px;
-
-          padding:
-            16px 17px;
-
-          display: flex;
-
-          align-items:
-            flex-start;
-
-          gap: 11px;
-
-          border:
-            1px solid
-            #d7e8e3;
-
-          border-radius: 15px;
-
-          background:
-            #f6fbf9;
-        }
-
-        .group-security svg {
-          flex: 0 0 auto;
-
-          color:
-            var(--green-dark);
-        }
-
-        .group-security strong {
-          display: block;
-
-          color: #284a44;
-
-          font-size: 13px;
-        }
-
-        .group-security p {
-          margin:
-            4px 0 0;
-
-          color: #758c88;
-
-          font-size: 12px;
-        }
-
-        /* =================================================
-           RESPONSIVE
-        ================================================= */
-
-        @media (
-          max-width: 950px
-        ) {
-          .member-summary-grid {
-            grid-template-columns:
-              repeat(
-                2,
-                1fr
-              );
-          }
-
-          .round-summary-grid {
-            grid-template-columns:
-              repeat(
-                2,
-                1fr
-              );
-          }
-
-          .group-member-row {
-            grid-template-columns:
-              48px
-              1fr
-              1fr;
-          }
-
-          .group-member-row
-          .member-column:last-child {
-            display: none;
-          }
-        }
-
-        @media (
-          max-width: 720px
-        ) {
-          .chit-detail-hero {
-            padding: 26px;
-          }
-
-          .chit-detail-hero::after {
-            display: none;
-          }
-
-          .group-section-header {
-            align-items:
-              flex-start;
-
-            flex-direction:
-              column;
-          }
-
-          .add-member-form,
-          .create-round-form {
-            grid-template-columns:
-              1fr;
-          }
-
-          .group-round {
-            grid-template-columns:
-              60px
-              1fr;
-          }
-
-          .round-open {
-            grid-column:
-              1 / -1;
-
-            width: 100%;
-
-            justify-content:
-              center;
-          }
-        }
-
-        @media (
-          max-width: 520px
-        ) {
-          .member-summary-grid,
-          .round-summary-grid {
-            grid-template-columns:
-              1fr;
-          }
-
-          .group-section {
-            padding: 20px;
-          }
-
-          .group-member-row {
-            grid-template-columns:
-              48px
-              1fr;
-          }
-
-          .member-column {
-            grid-column: 2;
-          }
-        }
-
-      `}</style>
-
-      <main className="page-content">
-
-        {/* BACK */}
+        {/* =================================================
+            BACK
+        ================================================= */}
 
         <button
           type="button"
-          className="cf-back-button"
           onClick={() =>
             navigate(
-              "/dashboard"
+              "/chit-groups"
             )
           }
+          className="inline-flex items-center gap-2 text-[13px] font-medium text-black/45 transition hover:text-black"
         >
+
           <ArrowLeft
             size={15}
           />
 
-          Back to dashboard
+          Back to Chit Groups
+
         </button>
 
-        {error && (
-          <div className="app-message error">
-            {error}
-          </div>
-        )}
 
         {/* =================================================
-            HERO
+            GROUP HERO
         ================================================= */}
 
-        <section className="chit-detail-hero">
+        <section className="chitflow-dark overflow-hidden rounded-[30px] bg-[#111318] p-7 text-white md:p-9">
 
-          <div className="chit-detail-copy">
+          <div className="grid gap-9 lg:grid-cols-[1.1fr_.9fr] lg:items-end">
 
-            <div className="chit-detail-tags">
+            <div>
 
-              <span className="state-badge green">
-                {chit?.status ||
-                  "ACTIVE"}
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
 
-              <span className="chit-detail-id">
-                CHIT #{chitId}
-              </span>
+                <Badge className="rounded-full bg-white/10 px-3 py-1.5 !text-white hover:bg-white/10">
+                  Chit #{chit.chit_id}
+                </Badge>
 
-              {isCreator && (
-                <span className="chit-owner">
+                <Badge
+                  className={
+                    isCreator
+                      ? "rounded-full bg-blue-500/15 px-3 py-1.5 !text-blue-200 hover:bg-blue-500/15"
+                      : "rounded-full bg-white/10 px-3 py-1.5 !text-white/70 hover:bg-white/10"
+                  }
+                >
+                  {isCreator
+                    ? "Manager"
+                    : "Member"}
+                </Badge>
 
-                  <Crown
-                    size={13}
-                  />
+              </div>
 
-                  Managed by you
 
-                </span>
-              )}
+              <h1 className="mt-5 !text-white text-[38px] font-semibold leading-[1.02] tracking-[-0.055em] md:text-[50px]">
+                {chit.name}
+              </h1>
+
+              <p className="mt-4 max-w-[650px] !text-white/55 text-[15px] leading-7">
+                Manage the financial
+                structure, membership and
+                controlled round lifecycle
+                for this chit group.
+              </p>
+
+
+              <div className="mt-7 flex flex-wrap gap-3">
+
+                {isCreator && (
+
+                  <Button
+                    type="button"
+                    data-tour="create-round"
+                    onClick={() =>
+                      setRoundOpen(
+                        true
+                      )
+                    }
+                    className="h-11 rounded-full bg-white px-5 text-[14px] font-semibold !text-[#111318] hover:bg-white/90"
+                  >
+
+                    <Plus
+                      size={16}
+                    />
+
+                    Create Round
+
+                  </Button>
+
+                )}
+
+
+                {isCreator && (
+
+                  <Button
+                    type="button"
+                    data-tour="add-group-member"
+                    variant="outline"
+                    onClick={() =>
+                      setMemberOpen(
+                        true
+                      )
+                    }
+                    className="cf-dark-action h-11 rounded-full border-white/15 bg-white/[0.05] px-5 !text-white hover:bg-white/10 hover:!text-white"
+                  >
+
+                    <UserPlus
+                      size={16}
+                    />
+
+                    Add Member
+
+                  </Button>
+
+                )}
+
+              </div>
 
             </div>
 
-            <h1>
-              {chit?.name ||
-                "Chit Group"}
-            </h1>
 
-            <p>
-              Manage members and
-              monitor every round
-              from contribution
-              through bidding,
-              payout and final
-              settlement.
-            </p>
+            {/* MONEY OVERVIEW */}
+
+            <div className="rounded-[25px] border border-white/10 bg-white/[0.06] p-6">
+
+              <div className="text-[12px] font-semibold uppercase tracking-[0.12em] !text-white/40">
+                Total chit pool
+              </div>
+
+              <div className="mt-3 text-[42px] font-semibold tracking-[-0.055em] !text-white">
+                ₹
+                {money(
+                  totalPool
+                )}
+              </div>
+
+
+              <div className="mt-6 grid grid-cols-2 gap-3">
+
+                <DarkStat
+                  label="Contribution"
+                  value={`₹${money(
+                    contribution
+                  )}`}
+                />
+
+                <DarkStat
+                  label="Members"
+                  value={`${activeMembers.length} / ${capacity}`}
+                />
+
+                <DarkStat
+                  label="Duration"
+                  value={
+                    duration
+                      ? `${duration} months`
+                      : "—"
+                  }
+                />
+
+                <DarkStat
+                  label="Rounds"
+                  value={
+                    rounds.length
+                  }
+                />
+
+              </div>
+
+            </div>
 
           </div>
 
         </section>
 
-        {/* =================================================
-            FINANCIAL STATS
-        ================================================= */}
-
-        <div className="stats-grid">
-
-          <div className="stat-card green">
-
-            <div className="stat-icon">
-              <Coins size={21} />
-            </div>
-
-            <div>
-
-              <div className="stat-value">
-                ₹
-                {Number(
-                  chit
-                    ?.contribution_amount ||
-                    0
-                ).toLocaleString(
-                  "en-IN"
-                )}
-              </div>
-
-              <div className="stat-label">
-                Contribution
-              </div>
-
-            </div>
-
-          </div>
-
-          <div className="stat-card yellow">
-
-            <div className="stat-icon">
-              <WalletCards
-                size={21}
-              />
-            </div>
-
-            <div>
-
-              <div className="stat-value">
-                ₹
-                {Number(
-                  chit?.total_amount ||
-                    0
-                ).toLocaleString(
-                  "en-IN"
-                )}
-              </div>
-
-              <div className="stat-label">
-                Total pool value
-              </div>
-
-            </div>
-
-          </div>
-
-          <div className="stat-card blue">
-
-            <div className="stat-icon">
-              <Users size={21} />
-            </div>
-
-            <div>
-
-              <div className="stat-value">
-                {activeMembers.length}
-                /
-                {chit
-                  ?.number_of_members ||
-                  0}
-              </div>
-
-              <div className="stat-label">
-                Members
-              </div>
-
-            </div>
-
-          </div>
-
-          <div className="stat-card purple">
-
-            <div className="stat-icon">
-              <CalendarDays
-                size={21}
-              />
-            </div>
-
-            <div>
-
-              <div className="stat-value">
-                {chit?.duration ||
-                  0}
-              </div>
-
-              <div className="stat-label">
-                Duration
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
 
         {/* =================================================
-            MEMBERS
+            MESSAGES
         ================================================= */}
 
-        <section className="group-section">
+        {error && (
 
-          <div className="group-section-header">
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-[14px] text-red-700">
+            {error}
+          </div>
 
-            <div className="group-section-title">
+        )}
 
-              <div className="group-section-icon">
-                <Users size={22} />
-              </div>
+
+        {success && (
+
+          <div className="rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-[14px] text-green-700">
+            {success}
+          </div>
+
+        )}
+
+
+        {/* =================================================
+            KPI CARDS
+        ================================================= */}
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+          <MetricCard
+            icon={
+              IndianRupee
+            }
+            label="Total pool value"
+            value={`₹${money(
+              totalPool
+            )}`}
+            description="Configured chit fund value"
+          />
+
+          <MetricCard
+            icon={
+              CircleDollarSign
+            }
+            label="Contribution"
+            value={`₹${money(
+              contribution
+            )}`}
+            description="Configured contribution per member"
+          />
+
+          <MetricCard
+            icon={Users}
+            label="Active members"
+            value={`${activeMembers.length}/${capacity}`}
+            description={`${Math.round(
+              capacityPercent
+            )}% of configured capacity`}
+          />
+
+          <MetricCard
+            icon={Gavel}
+            label="Rounds created"
+            value={
+              rounds.length
+            }
+            description={`${settledRounds.length} settled rounds`}
+          />
+
+        </section>
+
+
+        {/* =================================================
+            FORMS
+        ================================================= */}
+
+        {memberOpen && (
+
+          <Card
+            data-tour="group-member-form"
+            className="rounded-[26px] border-blue-200 bg-blue-50/30 shadow-none"
+          >
+
+            <CardHeader className="flex flex-row items-start justify-between gap-5 space-y-0 px-6 pt-6 md:px-7">
 
               <div>
 
-                <h2>
-                  Group members
-                </h2>
+                <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+                  Add Group Member
+                </CardTitle>
 
-                <p>
-                  Registered users
-                  participating in
-                  this chit group.
-                </p>
+                <CardDescription className="mt-2 text-[14px]">
+                  Add an existing registered
+                  ChitFlow user to this
+                  group.
+                </CardDescription>
 
               </div>
 
-            </div>
 
-            {isCreator &&
-              remainingSlots >
-                0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                onClick={() =>
+                  setMemberOpen(
+                    false
+                  )
+                }
+              >
+                <X
+                  size={18}
+                />
+              </Button>
 
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={() => {
-                    setShowAddMember(
-                      !showAddMember
-                    );
+            </CardHeader>
 
-                    setMemberMessage(
-                      ""
-                    );
-                  }}
+
+            <CardContent className="px-6 pb-6 md:px-7">
+
+              <form
+                onSubmit={
+                  addMember
+                }
+                className="flex flex-col gap-4 md:flex-row md:items-end"
+              >
+
+                <div className="w-full max-w-[460px] space-y-2">
+
+                  <Label
+                    htmlFor="groupMemberId"
+                    className="text-[13px]"
+                  >
+                    Registered User ID
+                  </Label>
+
+                  <Input
+                    id="groupMemberId"
+                    type="number"
+                    min="1"
+                    value={
+                      newUserId
+                    }
+                    onChange={(event) =>
+                      setNewUserId(
+                        event.target.value
+                      )
+                    }
+                    placeholder="Enter user ID"
+                    className="h-12 rounded-xl bg-white"
+                  />
+
+                </div>
+
+
+                <Button
+                  type="submit"
+                  disabled={
+                    addingMember ||
+                    !newUserId
+                  }
+                  className="h-12 rounded-full bg-[#111318] px-6 !text-white"
                 >
 
-                  {showAddMember ? (
-                    <>
-                      <X size={15} />
-                      Close
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus
-                        size={15}
-                      />
-                      Add Member
-                    </>
+                  {addingMember
+                    ? "Adding..."
+                    : "Add Member"}
+
+                  {!addingMember && (
+                    <ArrowRight
+                      size={16}
+                    />
                   )}
 
-                </button>
+                </Button>
 
-              )}
+              </form>
 
-          </div>
+            </CardContent>
 
-          {/* MEMBER SUMMARY */}
+          </Card>
 
-          <div className="member-summary-grid">
+        )}
 
-            <div className="member-summary">
 
-              <div className="member-summary-icon">
-                <Users size={20} />
-              </div>
+        {roundOpen && (
+
+          <Card
+            data-tour="round-form"
+            className="rounded-[26px] border-blue-200 bg-blue-50/30 shadow-none"
+          >
+
+            <CardHeader className="flex flex-row items-start justify-between gap-5 space-y-0 px-6 pt-6 md:px-7">
 
               <div>
-                <strong>
-                  {
-                    activeMembers.length
-                  }
-                </strong>
 
-                <span>
-                  Active members
-                </span>
+                <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+                  Create Round{" "}
+                  {nextRoundNumber}
+                </CardTitle>
+
+                <CardDescription className="mt-2 text-[14px]">
+                  Start the next controlled
+                  lifecycle for this chit
+                  group.
+                </CardDescription>
+
               </div>
 
-            </div>
 
-            <div className="member-summary">
-
-              <div className="member-summary-icon">
-                <WalletCards
-                  size={20}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                onClick={() =>
+                  setRoundOpen(
+                    false
+                  )
+                }
+              >
+                <X
+                  size={18}
                 />
-              </div>
+              </Button>
 
-              <div>
-                <strong>
-                  {chit
-                    ?.number_of_members ||
-                    0}
-                </strong>
+            </CardHeader>
 
-                <span>
-                  Maximum capacity
-                </span>
-              </div>
 
-            </div>
+            <CardContent className="px-6 pb-6 md:px-7">
 
-            <div className="member-summary">
+              <form
+                onSubmit={
+                  createRound
+                }
+                className="grid gap-4 md:grid-cols-[220px_1fr_auto] md:items-end"
+              >
 
-              <div className="member-summary-icon">
-                <UserPlus
-                  size={20}
-                />
-              </div>
+                <div className="space-y-2">
 
-              <div>
-                <strong>
-                  {remainingSlots}
-                </strong>
+                  <Label className="text-[13px]">
+                    Round number
+                  </Label>
 
-                <span>
-                  Available slots
-                </span>
-              </div>
+                  <div className="flex h-12 items-center rounded-xl border border-black/[0.08] bg-white px-4 text-[15px] font-semibold">
+                    Round{" "}
+                    {nextRoundNumber}
+                  </div>
 
-            </div>
+                </div>
 
-          </div>
 
-          {/* ADD MEMBER */}
+                <div className="space-y-2">
 
-          {showAddMember &&
-            isCreator && (
+                  <Label
+                    htmlFor="roundDueDate"
+                    className="text-[13px]"
+                  >
+                    Due date
+                  </Label>
 
-              <div className="add-member-panel">
+                  <Input
+                    id="roundDueDate"
+                    type="date"
+                    value={
+                      dueDate
+                    }
+                    onChange={(event) =>
+                      setDueDate(
+                        event.target.value
+                      )
+                    }
+                    className="h-12 rounded-xl bg-white"
+                  />
 
-                <h3>
-                  Add registered user
-                </h3>
+                </div>
 
-                <p>
-                  Enter the user ID
-                  of an existing
-                  ChitFlow account.
-                </p>
 
-                <form
-                  className="add-member-form"
-                  onSubmit={
-                    handleAddMember
+                <Button
+                  type="submit"
+                  disabled={
+                    creatingRound
                   }
+                  className="h-12 rounded-full bg-[#111318] px-6 !text-white"
                 >
 
-                  <label>
+                  {creatingRound
+                    ? "Creating..."
+                    : "Create Round"}
 
-                    <span>
-                      REGISTERED USER ID
-                    </span>
-
-                    <input
-                      type="number"
-                      min="1"
-                      value={
-                        newUserId
-                      }
-                      onChange={(e) =>
-                        setNewUserId(
-                          e.target.value
-                        )
-                      }
-                      placeholder="Example: 2"
-                      required
+                  {!creatingRound && (
+                    <ArrowRight
+                      size={16}
                     />
+                  )}
 
-                  </label>
+                </Button>
 
-                  <button
-                    type="submit"
-                    className="primary-button"
-                    disabled={
-                      addMemberLoading
-                    }
-                  >
-                    {addMemberLoading
-                      ? "Adding..."
-                      : "Add Member"}
-                  </button>
+              </form>
 
-                </form>
+            </CardContent>
 
-                {memberMessage && (
-                  <div className="app-message">
-                    {
-                      memberMessage
-                    }
-                  </div>
-                )}
+          </Card>
+
+        )}
+
+
+        {/* =================================================
+            ANALYTICS
+        ================================================= */}
+
+        <section className="grid gap-5 xl:grid-cols-[.72fr_1.28fr]">
+
+          {/* CAPACITY */}
+
+          <Card className="rounded-[26px] border-black/[0.07] shadow-none">
+
+            <CardHeader className="px-6 pt-6">
+
+              <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-blue-600">
+                Membership
+              </div>
+
+              <CardTitle className="mt-2 text-[22px] font-semibold tracking-[-0.04em]">
+                Group capacity
+              </CardTitle>
+
+              <CardDescription className="mt-2 text-[14px]">
+                Active membership against
+                configured capacity.
+              </CardDescription>
+
+            </CardHeader>
+
+
+            <CardContent className="px-6 pb-6">
+
+              <div className="flex justify-center py-4">
+
+                <CapacityGauge
+                  percentage={
+                    capacityPercent
+                  }
+                  current={
+                    activeMembers.length
+                  }
+                  capacity={
+                    capacity
+                  }
+                />
 
               </div>
 
-            )}
 
-          {/* MEMBER LIST */}
+              <div className="grid grid-cols-2 gap-3">
 
-          {members.length ===
-          0 ? (
+                <SmallMetric
+                  label="Active"
+                  value={
+                    activeMembers.length
+                  }
+                />
 
-            <div className="group-empty">
+                <SmallMetric
+                  label="Available"
+                  value={
+                    Math.max(
+                      0,
+                      capacity -
+                        activeMembers.length
+                    )
+                  }
+                />
 
-              <strong>
-                No members found
-              </strong>
+              </div>
 
-              <p>
-                Group memberships
-                will appear here.
-              </p>
+            </CardContent>
 
-            </div>
+          </Card>
 
-          ) : (
 
-            <div className="group-members-list">
+          {/* FINANCIAL STRUCTURE */}
 
-              {members.map(
-                (member) => {
+          <Card className="rounded-[26px] border-black/[0.07] shadow-none">
 
-                  const creator =
-                    Number(
-                      member.user_id
-                    ) ===
-                    Number(
-                      chit?.created_by
-                    );
+            <CardHeader className="px-6 pt-6 md:px-7">
 
-                  return (
-                    <article
-                      key={
-                        member.membership_id
-                      }
-                      className="group-member-row"
-                    >
+              <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-violet-600">
+                Financial structure
+              </div>
 
-                      <div className="member-number">
+              <CardTitle className="mt-2 text-[22px] font-semibold tracking-[-0.04em]">
+                How this chit is configured
+              </CardTitle>
+
+              <CardDescription className="mt-2 text-[14px]">
+                Contribution, member
+                capacity and total
+                configured value.
+              </CardDescription>
+
+            </CardHeader>
+
+
+            <CardContent className="px-6 pb-6 md:px-7">
+
+              <div className="rounded-[22px] bg-[#f6f7f9] p-5 md:p-6">
+
+                <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-center">
+
+                  <FinancialBlock
+                    icon={
+                      CircleDollarSign
+                    }
+                    label="Contribution"
+                    value={`₹${money(
+                      contribution
+                    )}`}
+                  />
+
+                  <div className="hidden text-[24px] font-light text-black/20 md:block">
+                    ×
+                  </div>
+
+                  <FinancialBlock
+                    icon={Users}
+                    label="Member capacity"
+                    value={
+                      capacity
+                    }
+                  />
+
+                  <div className="hidden text-[24px] font-light text-black/20 md:block">
+                    =
+                  </div>
+
+                  <FinancialBlock
+                    icon={
+                      WalletCards
+                    }
+                    label="Configured pool"
+                    value={`₹${money(
+                      totalPool
+                    )}`}
+                  />
+
+                </div>
+
+              </div>
+
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+
+                <InfoTile
+                  icon={
+                    CalendarDays
+                  }
+                  label="Duration"
+                  value={
+                    duration
+                      ? `${duration} months`
+                      : "Not specified"
+                  }
+                />
+
+                <InfoTile
+                  icon={Crown}
+                  label="Your role"
+                  value={
+                    isCreator
+                      ? "Group Manager"
+                      : "Group Member"
+                  }
+                />
+
+              </div>
+
+            </CardContent>
+
+          </Card>
+
+        </section>
+
+
+        {/* =================================================
+            LATEST ROUND + ROUND HEALTH
+        ================================================= */}
+
+        <section className="grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
+
+          {/* CURRENT ROUND */}
+
+          <Card className="rounded-[26px] border-black/[0.07] shadow-none">
+
+            <CardHeader className="px-6 pt-6 md:px-7">
+
+              <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+                Current round progress
+              </CardTitle>
+
+              <CardDescription className="mt-2 text-[14px]">
+                The latest round&apos;s
+                position in the ChitFlow
+                lifecycle.
+              </CardDescription>
+
+            </CardHeader>
+
+
+            <CardContent className="px-6 pb-6 md:px-7">
+
+              {!latestRound ? (
+
+                <EmptyState
+                  title="No rounds yet"
+                  description="Create the first round to begin this chit group's lifecycle."
+                />
+
+              ) : (
+
+                <>
+
+                  <div className="flex flex-col justify-between gap-4 rounded-[20px] bg-[#111318] p-5 text-white sm:flex-row sm:items-center">
+
+                    <div>
+
+                      <div className="text-[12px] !text-white/40">
+                        Latest round
+                      </div>
+
+                      <div className="mt-1 text-[25px] font-semibold !text-white">
+                        Round{" "}
                         {
-                          member.user_id
+                          latestRound.round_number
                         }
                       </div>
 
-                      <div className="member-main">
+                    </div>
 
-                        <strong>
-                          Member #
-                          {
-                            member.user_id
-                          }
-                        </strong>
 
-                        <span>
-                          Membership #
-                          {
-                            member.membership_id
-                          }
-                        </span>
+                    <Badge className="w-fit rounded-full bg-white/10 px-4 py-2 !text-white hover:bg-white/10">
+                      {
+                        readableState(
+                          latestState
+                        )
+                      }
+                    </Badge>
 
-                      </div>
+                  </div>
 
-                      <div className="member-column">
 
-                        <span>
-                          STATUS
-                        </span>
+                  <div className="mt-6">
 
-                        <strong>
+                    <div className="flex items-center justify-between text-[12px]">
 
-                          <span
-                            className={`state-badge ${
-                              member.status ===
-                              "ACTIVE"
-                                ? "green"
-                                : "yellow"
-                            }`}
-                          >
-                            {
-                              member.status
-                            }
-                          </span>
+                      <span className="text-black/45">
+                        Round created
+                      </span>
 
-                        </strong>
+                      <span className="font-medium text-black/60">
+                        Round settled
+                      </span>
 
-                      </div>
+                    </div>
 
-                      <div className="member-column">
 
-                        <span>
-                          JOINED
-                        </span>
+                    <div className="mt-3 h-3 overflow-hidden rounded-full bg-[#eceff3]">
 
-                        <strong>
-                          {formatDate(
-                            member.join_date
-                          )}
-                        </strong>
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-blue-600 to-violet-500 transition-all"
+                        style={{
+                          width:
+                            `${Math.max(
+                              4,
+                              lifecycleProgress
+                            )}%`,
+                        }}
+                      />
 
-                      </div>
+                    </div>
 
-                      {creator && (
-                        <span
-                          style={{
-                            display:
-                              "none",
-                          }}
-                        >
-                          Creator
-                        </span>
-                      )}
 
-                    </article>
-                  );
-                }
+                    <div className="mt-5 grid gap-2 sm:grid-cols-3">
+
+                      <SmallMetric
+                        label="Round"
+                        value={
+                          latestRound.round_number
+                        }
+                      />
+
+                      <SmallMetric
+                        label="State"
+                        value={
+                          readableState(
+                            latestState
+                          )
+                        }
+                        small
+                      />
+
+                      <SmallMetric
+                        label="Progress"
+                        value={`${Math.round(
+                          lifecycleProgress
+                        )}%`}
+                      />
+
+                    </div>
+
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="mt-5 rounded-full"
+                      onClick={() =>
+                        navigate(
+                          `/rounds/${latestRound.round_id}`
+                        )
+                      }
+                    >
+
+                      Open Current Round
+
+                      <ArrowRight
+                        size={15}
+                      />
+
+                    </Button>
+
+                  </div>
+
+                </>
+
               )}
 
-            </div>
+            </CardContent>
 
-          )}
+          </Card>
 
-          <div className="group-security">
 
-            <ShieldCheck
-              size={20}
-            />
+          {/* ROUND HEALTH */}
 
-            <div>
+          <Card className="rounded-[26px] border-black/[0.07] shadow-none">
 
-              <strong>
-                Membership controlled
-                by the group creator
-              </strong>
+            <CardHeader className="px-6 pt-6">
 
-              <p>
-                Only the creator can
-                add registered users,
-                and the backend
-                prevents membership
-                beyond the configured
-                group capacity.
-              </p>
+              <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+                Round health
+              </CardTitle>
 
-            </div>
+              <CardDescription className="mt-2 text-[14px]">
+                Current round-state
+                distribution.
+              </CardDescription>
 
-          </div>
+            </CardHeader>
+
+
+            <CardContent className="px-6 pb-6">
+
+              {rounds.length ===
+              0 ? (
+
+                <EmptyState
+                  title="No round activity"
+                  description="Round health will appear after the first round is created."
+                />
+
+              ) : (
+
+                <>
+
+                  <div className="relative mx-auto h-[220px] max-w-[280px]">
+
+                    <ResponsiveContainer
+                      width="100%"
+                      height="100%"
+                    >
+
+                      <PieChart>
+
+                        <Pie
+                          data={
+                            roundHealthData
+                          }
+                          dataKey="value"
+                          nameKey="name"
+                          innerRadius={64}
+                          outerRadius={88}
+                          paddingAngle={4}
+                          stroke="none"
+                        >
+
+                          {roundHealthData.map(
+                            (
+                              entry,
+                              index
+                            ) => (
+
+                              <Cell
+                                key={
+                                  entry.name
+                                }
+                                fill={
+                                  pieColors[
+                                    index %
+                                      pieColors.length
+                                  ]
+                                }
+                              />
+
+                            )
+                          )}
+
+                        </Pie>
+
+                        <Tooltip />
+
+                      </PieChart>
+
+                    </ResponsiveContainer>
+
+
+                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+
+                      <div className="text-[34px] font-semibold tracking-[-0.05em]">
+                        {
+                          rounds.length
+                        }
+                      </div>
+
+                      <div className="text-[11px] text-black/40">
+                        total rounds
+                      </div>
+
+                    </div>
+
+                  </div>
+
+
+                  <div className="space-y-3">
+
+                    <LegendItem
+                      color="bg-blue-600"
+                      label="Active"
+                      value={
+                        otherActiveRounds.length
+                      }
+                    />
+
+                    <LegendItem
+                      color="bg-violet-600"
+                      label="Bidding"
+                      value={
+                        biddingRounds.length
+                      }
+                    />
+
+                    <LegendItem
+                      color="bg-amber-500"
+                      label="Needs attention"
+                      value={
+                        attentionRounds.length
+                      }
+                    />
+
+                    <LegendItem
+                      color="bg-green-600"
+                      label="Settled"
+                      value={
+                        settledRounds.length
+                      }
+                    />
+
+                  </div>
+
+                </>
+
+              )}
+
+            </CardContent>
+
+          </Card>
 
         </section>
+
 
         {/* =================================================
             ROUNDS
         ================================================= */}
 
-        <section className="group-section">
+        <Card className="rounded-[26px] border-black/[0.07] shadow-none">
 
-          <div className="group-section-header">
+          <CardHeader className="flex flex-row items-center justify-between gap-5 space-y-0 px-6 pt-6 md:px-7">
 
-            <div className="group-section-title">
+            <div>
 
-              <div className="group-section-icon">
-                <Layers3
-                  size={22}
-                />
-              </div>
+              <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+                Round history
+              </CardTitle>
 
-              <div>
-
-                <h2>
-                  Chit rounds
-                </h2>
-
-                <p>
-                  Follow each round
-                  through its
-                  controlled
-                  lifecycle.
-                </p>
-
-              </div>
+              <CardDescription className="mt-2 text-[14px]">
+                Open any round to manage
+                contributions, bidding,
+                disputes and payout.
+              </CardDescription>
 
             </div>
+
 
             {isCreator && (
 
-              <button
+              <Button
                 type="button"
-                className="primary-button"
-                onClick={() => {
-                  setShowCreateRound(
-                    !showCreateRound
-                  );
-
-                  setCreateMessage(
-                    ""
-                  );
-                }}
+                variant="outline"
+                className="hidden rounded-full sm:inline-flex"
+                onClick={() =>
+                  setRoundOpen(
+                    true
+                  )
+                }
               >
+                <Plus
+                  size={15}
+                />
+                Round
+              </Button>
 
-                {showCreateRound ? (
-                  <>
-                    <X size={15} />
-                    Close
-                  </>
-                ) : (
-                  <>
-                    <Plus
-                      size={15}
-                    />
-                    Create Round
-                  </>
+            )}
+
+          </CardHeader>
+
+
+          <CardContent className="px-6 pb-6 md:px-7">
+
+            {sortedRounds.length ===
+            0 ? (
+
+              <EmptyState
+                title="No rounds created"
+                description="Create the first round when you're ready to begin collecting contributions."
+              />
+
+            ) : (
+
+              <div className="space-y-3">
+
+                {sortedRounds.map(
+                  (round) => {
+
+                    const state =
+                      getState(
+                        round
+                      );
+
+                    const attention =
+                      state ===
+                        "CHALLENGE_OPEN" ||
+                      state.includes(
+                        "DISPUTE"
+                      ) ||
+                      state ===
+                        "PAYMENT_LATE" ||
+                      state ===
+                        "PAYMENT_DEFAULT";
+
+                    return (
+                      <button
+                        key={
+                          round.round_id
+                        }
+                        type="button"
+                        onClick={() =>
+                          navigate(
+                            `/rounds/${round.round_id}`
+                          )
+                        }
+                        className="group flex w-full flex-col justify-between gap-4 rounded-[20px] border border-black/[0.07] p-4 text-left transition hover:border-blue-200 hover:bg-blue-50/20 sm:flex-row sm:items-center"
+                      >
+
+                        <div className="flex items-center gap-4">
+
+                          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[#f1f3f6]">
+
+                            <Gavel
+                              size={19}
+                            />
+
+                          </div>
+
+
+                          <div>
+
+                            <div className="text-[15px] font-semibold">
+                              Round{" "}
+                              {
+                                round.round_number
+                              }
+                            </div>
+
+                            <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-black/40">
+
+                              <span>
+                                ID #
+                                {
+                                  round.round_id
+                                }
+                              </span>
+
+                              {round.due_date && (
+
+                                <span className="inline-flex items-center gap-1">
+
+                                  <Clock3
+                                    size={12}
+                                  />
+
+                                  {new Date(
+                                    round.due_date
+                                  ).toLocaleDateString(
+                                    "en-IN"
+                                  )}
+
+                                </span>
+
+                              )}
+
+                            </div>
+
+                          </div>
+
+                        </div>
+
+
+                        <div className="flex items-center gap-3">
+
+                          <Badge
+                            className={
+                              attention
+                                ? "rounded-full bg-amber-50 px-3 py-1.5 text-[11px] text-amber-700 hover:bg-amber-50"
+                                : state ===
+                                    "ROUND_SETTLED"
+                                  ? "rounded-full bg-green-50 px-3 py-1.5 text-[11px] text-green-700 hover:bg-green-50"
+                                  : "rounded-full bg-blue-50 px-3 py-1.5 text-[11px] text-blue-700 hover:bg-blue-50"
+                            }
+                          >
+                            {
+                              readableState(
+                                state
+                              )
+                            }
+                          </Badge>
+
+                          <ArrowRight
+                            size={16}
+                            className="text-black/30 transition group-hover:translate-x-1 group-hover:text-blue-600"
+                          />
+
+                        </div>
+
+                      </button>
+                    );
+                  }
                 )}
 
-              </button>
-
-            )}
-
-          </div>
-
-          {/* ROUND STATS */}
-
-          <div className="round-summary-grid">
-
-            <div className="round-summary-item">
-
-              <Layers3 size={21} />
-
-              <div>
-                <strong>
-                  {rounds.length}
-                </strong>
-
-                <span>
-                  Total rounds
-                </span>
-              </div>
-
-            </div>
-
-            <div className="round-summary-item">
-
-              <CheckCircle2
-                size={21}
-              />
-
-              <div>
-                <strong>
-                  {completedRounds}
-                </strong>
-
-                <span>
-                  Settled
-                </span>
-              </div>
-
-            </div>
-
-            <div className="round-summary-item">
-
-              <Clock3 size={21} />
-
-              <div>
-                <strong>
-                  {activeRounds}
-                </strong>
-
-                <span>
-                  In progress
-                </span>
-              </div>
-
-            </div>
-
-            <div className="round-summary-item">
-
-              <CalendarDays
-                size={21}
-              />
-
-              <div>
-                <strong>
-                  {upcomingRounds}
-                </strong>
-
-                <span>
-                  Upcoming
-                </span>
-              </div>
-
-            </div>
-
-          </div>
-
-          {/* CREATE ROUND */}
-
-          {showCreateRound &&
-            isCreator && (
-
-              <div className="create-round-panel">
-
-                <div className="create-round-top">
-
-                  <div>
-
-                    <h3>
-                      Create round{" "}
-                      {
-                        nextRoundNumber
-                      }
-                    </h3>
-
-                    <p>
-                      Set the
-                      contribution due
-                      date for this
-                      round.
-                    </p>
-
-                  </div>
-
-                  <button
-                    type="button"
-                    className="round-close"
-                    onClick={() =>
-                      setShowCreateRound(
-                        false
-                      )
-                    }
-                  >
-                    <X size={16} />
-                  </button>
-
-                </div>
-
-                <form
-                  className="create-round-form"
-                  onSubmit={
-                    handleCreateRound
-                  }
-                >
-
-                  <label>
-
-                    <span>
-                      ROUND NUMBER
-                    </span>
-
-                    <input
-                      value={
-                        nextRoundNumber
-                      }
-                      disabled
-                    />
-
-                  </label>
-
-                  <label>
-
-                    <span>
-                      CONTRIBUTION DUE DATE
-                    </span>
-
-                    <input
-                      type="datetime-local"
-                      value={dueDate}
-                      onChange={(e) =>
-                        setDueDate(
-                          e.target.value
-                        )
-                      }
-                      required
-                    />
-
-                  </label>
-
-                  <button
-                    type="submit"
-                    className="primary-button"
-                    disabled={
-                      createLoading
-                    }
-                  >
-                    {createLoading
-                      ? "Creating..."
-                      : "Create Round"}
-                  </button>
-
-                </form>
-
               </div>
 
             )}
 
-          {createMessage && (
+          </CardContent>
 
-            <div className="app-message">
-              {createMessage}
+        </Card>
+
+
+        {/* =================================================
+            MEMBERS
+        ================================================= */}
+
+        <Card className="rounded-[26px] border-black/[0.07] shadow-none">
+
+          <CardHeader className="flex flex-row items-center justify-between gap-5 space-y-0 px-6 pt-6 md:px-7">
+
+            <div>
+
+              <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+                Group members
+              </CardTitle>
+
+              <CardDescription className="mt-2 text-[14px]">
+                Users currently associated
+                with this chit group.
+              </CardDescription>
+
             </div>
 
-          )}
 
-          {/* ROUND LIST */}
+            <Badge
+              variant="secondary"
+              className="rounded-full px-3 py-1.5"
+            >
+              {activeMembers.length} active
+            </Badge>
 
-          {rounds.length ===
-          0 ? (
+          </CardHeader>
 
-            <div className="group-empty">
 
-              <strong>
-                No rounds created yet
-              </strong>
+          <CardContent className="px-6 pb-6 md:px-7">
 
-              <p>
-                {isCreator
-                  ? "Create the first round to begin the ChitFlow lifecycle."
-                  : "The group creator has not created a round yet."}
-              </p>
+            {members.length ===
+            0 ? (
 
-            </div>
+              <EmptyState
+                title="No members yet"
+                description="Add registered ChitFlow users to begin building this group."
+              />
 
-          ) : (
+            ) : (
 
-            <div className="group-round-list">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
 
-              {rounds.map(
-                (round) => (
+                {members.map(
+                  (
+                    member,
+                    index
+                  ) => {
 
-                  <article
-                    key={
-                      round.round_id
-                    }
-                    className="group-round"
-                  >
+                    const active =
+                      isActiveMember(
+                        member
+                      );
 
-                    <div className="round-number">
-
-                      <span>
-                        ROUND
-                      </span>
-
-                      <strong>
-                        {
-                          round.round_number
+                    return (
+                      <div
+                        key={
+                          `${getMemberId(
+                            member
+                          )}-${index}`
                         }
-                      </strong>
+                        className="rounded-[20px] border border-black/[0.07] bg-white p-4"
+                      >
 
-                    </div>
+                        <div className="flex items-center gap-3">
 
-                    <div className="round-content">
+                          <MemberAvatar
+                            name={
+                              getMemberName(
+                                member
+                              )
+                            }
+                          />
 
-                      <h3>
-                        Round{" "}
-                        {
-                          round.round_number
-                        }{" "}
+                          <div className="min-w-0 flex-1">
 
-                        <span
-                          className={`state-badge ${getStateClass(
-                            round.current_state
-                          )}`}
-                        >
-                          {formatState(
-                            round.current_state
-                          )}
-                        </span>
-                      </h3>
+                            <div className="truncate text-[14px] font-semibold">
+                              {
+                                getMemberName(
+                                  member
+                                )
+                              }
+                            </div>
 
-                      <div className="round-meta">
+                            <div className="mt-1 text-[11px] text-black/40">
+                              User #
+                              {
+                                getMemberId(
+                                  member
+                                )
+                              }
+                            </div>
 
-                        <span>
-                          Started:{" "}
-                          <strong>
-                            {formatDate(
-                              round.start_date
-                            )}
-                          </strong>
-                        </span>
+                          </div>
 
-                        <span>
-                          Due:{" "}
-                          <strong>
-                            {formatDate(
-                              round.due_date
-                            )}
-                          </strong>
-                        </span>
 
-                        <span>
-                          Winner:{" "}
-                          <strong>
-                            {round.winner_id
-                              ? `Member #${round.winner_id}`
-                              : "Not selected"}
-                          </strong>
-                        </span>
+                          <span
+                            className={
+                              active
+                                ? "size-2.5 rounded-full bg-green-500"
+                                : "size-2.5 rounded-full bg-gray-300"
+                            }
+                          />
+
+                        </div>
+
+
+                        <div className="mt-4 flex items-center justify-between border-t border-black/[0.06] pt-3">
+
+                          <span className="text-[11px] text-black/40">
+                            Membership
+                          </span>
+
+                          <span
+                            className={
+                              active
+                                ? "text-[11px] font-semibold text-green-700"
+                                : "text-[11px] font-semibold text-black/45"
+                            }
+                          >
+                            {
+                              memberStatus(
+                                member
+                              )
+                            }
+                          </span>
+
+                        </div>
 
                       </div>
+                    );
+                  }
+                )}
 
-                    </div>
+              </div>
 
-                    <button
-                      type="button"
-                      className="round-open"
-                      onClick={() =>
-                        navigate(
-                          `/rounds/${round.round_id}`
-                        )
-                      }
-                    >
+            )}
 
-                      Open Round
+          </CardContent>
 
-                      <ArrowRight
-                        size={14}
-                      />
-
-                    </button>
-
-                  </article>
-
-                )
-              )}
-
-            </div>
-
-          )}
-
-        </section>
+        </Card>
 
       </main>
 
     </AppShell>
   );
 }
+
+
+/* =========================================================
+   COMPONENTS
+========================================================= */
+
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  description,
+}) {
+  return (
+    <Card className="rounded-[22px] border-black/[0.07] shadow-none">
+
+      <CardContent className="p-5">
+
+        <div className="flex size-11 items-center justify-center rounded-xl bg-[#f1f3f6]">
+
+          <Icon
+            size={19}
+          />
+
+        </div>
+
+        <div className="mt-6 text-[13px] text-black/45">
+          {label}
+        </div>
+
+        <div className="mt-1 text-[28px] font-semibold tracking-[-0.05em]">
+          {value}
+        </div>
+
+        <div className="mt-2 text-[12px] leading-5 text-black/40">
+          {description}
+        </div>
+
+      </CardContent>
+
+    </Card>
+  );
+}
+
+
+function DarkStat({
+  label,
+  value,
+}) {
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.05] p-4">
+
+      <div className="text-[11px] !text-white/40">
+        {label}
+      </div>
+
+      <div className="mt-2 text-[19px] font-semibold tracking-[-0.035em] !text-white">
+        {value}
+      </div>
+
+    </div>
+  );
+}
+
+
+function CapacityGauge({
+  percentage,
+  current,
+  capacity,
+}) {
+  const degrees =
+    Math.round(
+      percentage * 3.6
+    );
+
+  return (
+    <div
+      className="relative flex size-[190px] items-center justify-center rounded-full"
+      style={{
+        background:
+          `conic-gradient(
+            #2563eb 0deg,
+            #2563eb ${degrees}deg,
+            #edf0f4 ${degrees}deg,
+            #edf0f4 360deg
+          )`,
+      }}
+    >
+
+      <div className="flex size-[148px] flex-col items-center justify-center rounded-full bg-white">
+
+        <div className="text-[35px] font-semibold tracking-[-0.055em]">
+          {Math.round(
+            percentage
+          )}
+          %
+        </div>
+
+        <div className="mt-1 text-[11px] text-black/40">
+          capacity used
+        </div>
+
+        <div className="mt-3 text-[12px] font-semibold text-black/60">
+          {current} /{" "}
+          {capacity}
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
+
+function FinancialBlock({
+  icon: Icon,
+  label,
+  value,
+}) {
+  return (
+    <div className="text-center">
+
+      <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-white">
+
+        <Icon
+          size={18}
+        />
+
+      </div>
+
+      <div className="mt-3 text-[11px] text-black/40">
+        {label}
+      </div>
+
+      <div className="mt-1 text-[20px] font-semibold tracking-[-0.035em]">
+        {value}
+      </div>
+
+    </div>
+  );
+}
+
+
+function InfoTile({
+  icon: Icon,
+  label,
+  value,
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-black/[0.07] p-4">
+
+      <div className="flex size-10 items-center justify-center rounded-xl bg-[#f1f3f6]">
+
+        <Icon
+          size={17}
+        />
+
+      </div>
+
+      <div>
+
+        <div className="text-[11px] text-black/40">
+          {label}
+        </div>
+
+        <div className="mt-1 text-[14px] font-semibold">
+          {value}
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
+
+function SmallMetric({
+  label,
+  value,
+  small = false,
+}) {
+  return (
+    <div className="rounded-2xl bg-[#f6f7f9] p-4">
+
+      <div className="text-[11px] text-black/40">
+        {label}
+      </div>
+
+      <div
+        className={
+          small
+            ? "mt-2 text-[12px] font-semibold leading-5"
+            : "mt-2 text-[20px] font-semibold tracking-[-0.035em]"
+        }
+      >
+        {value}
+      </div>
+
+    </div>
+  );
+}
+
+
+function LegendItem({
+  color,
+  label,
+  value,
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+
+      <div className="flex items-center gap-2">
+
+        <span
+          className={`size-2 rounded-full ${color}`}
+        />
+
+        <span className="text-[12px] text-black/50">
+          {label}
+        </span>
+
+      </div>
+
+      <span className="text-[13px] font-semibold">
+        {value}
+      </span>
+
+    </div>
+  );
+}
+
+
+function MemberAvatar({
+  name,
+}) {
+  const initials =
+    String(
+      name ||
+      "Member"
+    )
+      .split(" ")
+      .filter(Boolean)
+      .slice(
+        0,
+        2
+      )
+      .map(
+        (part) =>
+          part[0]?.toUpperCase()
+      )
+      .join("");
+
+  return (
+    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#111318] text-[11px] font-semibold !text-white">
+      {initials ||
+        "M"}
+    </div>
+  );
+}
+
+
+function EmptyState({
+  title,
+  description,
+}) {
+  return (
+    <div className="rounded-2xl border border-dashed border-black/10 bg-[#fafafa] px-6 py-10 text-center">
+
+      <div className="text-[16px] font-semibold">
+        {title}
+      </div>
+
+      <p className="mx-auto mt-2 max-w-[440px] text-[14px] leading-6 text-black/45">
+        {description}
+      </p>
+
+    </div>
+  );
+}
+
 
 export default ChitDetails;

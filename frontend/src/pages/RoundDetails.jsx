@@ -26,7 +26,9 @@ import {
 
 import api from "../api/api";
 import AppShell from "../components/AppShell";
-import ChitJourney from "../components/ChitJourney";
+import RoundLifecycleControl from "../components/RoundLifecycleControl.jsx";
+import RoundVisualAnalytics from "../components/RoundVisualAnalytics.jsx";
+import DisputePanel from "../components/DisputePanel.jsx";
 
 /* =========================================================
    NORMAL WORKFLOW
@@ -97,6 +99,11 @@ function RoundDetails() {
 
   const [bids, setBids] =
     useState([]);
+
+  const [
+    disputes,
+    setDisputes,
+  ] = useState([]);
 
   const [
     auditEvents,
@@ -226,31 +233,57 @@ function RoundDetails() {
           api.get(
             "/users/me"
           ),
-
+        
           api.get(
             `/rounds/${roundId}/contributions`
           ),
-
+        
           api.get(
             `/rounds/${roundId}/bids`
           ),
-
+        
           api.get(
             `/rounds/${roundId}/audit`
           ),
-
+        
           api.get(
             "/chit-groups/"
           ),
         ]);
+        
+        
+        /* =====================================================
+   DISPUTES ARE OPTIONAL FOR THE MAIN ROUND LOAD
+===================================================== */
 
-        const currentUser =
-          userResponse.data;
+let disputeData = [];
 
-        const accessibleGroups =
-          groupsResponse.data ||
-          [];
+try {
+  const disputeResponse =
+    await api.get(
+      `/rounds/${roundId}/disputes`
+    );
 
+  disputeData =
+    disputeResponse.data ||
+    [];
+} catch (disputeError) {
+  console.warn(
+    "Unable to load disputes:",
+    disputeError.response?.data ||
+      disputeError.message
+  );
+
+  disputeData = [];
+}
+
+
+const currentUser =
+  userResponse.data;
+
+const accessibleGroups =
+  groupsResponse.data ||
+  [];
         setUser(
           currentUser
         );
@@ -268,6 +301,10 @@ function RoundDetails() {
         setAuditEvents(
           auditResponse.data ||
           []
+        );
+
+        setDisputes(
+          disputeData
         );
 
         /*
@@ -401,7 +438,7 @@ function RoundDetails() {
   const currentState =
     round?.current_state ||
     latestAudit?.new_state ||
-    "ROUND_CREATED";
+    "";
 
   const nextState =
     nextStateMap[
@@ -1066,7 +1103,7 @@ function RoundDetails() {
             #bddbd2;
 
           color:
-            var(--green-dark);
+            #2563eb;
         }
 
         /* =================================================
@@ -1563,10 +1600,10 @@ function RoundDetails() {
             15px;
 
           background:
-            var(--green-light);
+            #dbeafe;
 
           color:
-            var(--green-dark);
+            #2563eb;
         }
 
         .round-section-title
@@ -1823,7 +1860,7 @@ function RoundDetails() {
           background: white;
 
           color:
-            var(--green-dark);
+            #2563eb;
 
           font-size:
             12px;
@@ -1837,7 +1874,7 @@ function RoundDetails() {
 
         .verify-button:hover {
           background:
-            var(--green-light);
+            #dbeafe;
         }
 
         /* =================================================
@@ -2010,7 +2047,7 @@ function RoundDetails() {
             0 0 auto;
 
           color:
-            var(--green-dark);
+            #2563eb;
         }
 
         .payout-status strong {
@@ -2101,10 +2138,10 @@ function RoundDetails() {
             12px;
 
           background:
-            var(--green-light);
+            #dbeafe;
 
           color:
-            var(--green-dark);
+            #2563eb;
 
           font-family:
             var(
@@ -2129,7 +2166,7 @@ function RoundDetails() {
             );
 
           color:
-            var(--green-dark);
+            #2563eb;
 
           font-size:
             11px;
@@ -2327,6 +2364,176 @@ function RoundDetails() {
           }
 
         }
+
+
+
+        /* ROUND HERO BLUE OVERRIDE */
+
+        .round-main-hero {
+          background:
+            radial-gradient(
+              circle at 88% 24%,
+              rgba(59, 130, 246, 0.30),
+              transparent 30%
+            ),
+            radial-gradient(
+              circle at 65% 115%,
+              rgba(124, 58, 237, 0.18),
+              transparent 38%
+            ),
+            linear-gradient(
+              135deg,
+              #071a33 0%,
+              #0b2450 52%,
+              #12366f 100%
+            ) !important;
+
+          border-color:
+            rgba(96, 165, 250, 0.15) !important;
+        }
+
+
+        .round-main-hero h1 {
+          color: #ffffff !important;
+        }
+
+
+        .round-main-hero p {
+          color:
+            rgba(
+              219,
+              234,
+              254,
+              0.68
+            ) !important;
+        }
+
+
+        .round-live-pill {
+          background:
+            rgba(
+              37,
+              99,
+              235,
+              0.18
+            ) !important;
+
+          border-color:
+            rgba(
+              96,
+              165,
+              250,
+              0.35
+            ) !important;
+
+          color:
+            #bfdbfe !important;
+        }
+
+
+        .round-live-dot {
+          background:
+            #60a5fa !important;
+
+          box-shadow:
+            0 0 0 5px
+            rgba(
+              59,
+              130,
+              246,
+              0.14
+            ),
+            0 0 18px
+            rgba(
+              96,
+              165,
+              250,
+              0.65
+            ) !important;
+        }
+
+
+        .round-code-pill {
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.07
+            ) !important;
+
+          border-color:
+            rgba(
+              191,
+              219,
+              254,
+              0.16
+            ) !important;
+
+          color:
+            rgba(
+              239,
+              246,
+              255,
+              0.74
+            ) !important;
+        }
+
+
+        .round-orbit {
+          border-color:
+            rgba(
+              96,
+              165,
+              250,
+              0.18
+            ) !important;
+        }
+
+
+        .round-orbit::before,
+        .round-orbit::after {
+          border-color:
+            rgba(
+              96,
+              165,
+              250,
+              0.20
+            ) !important;
+        }
+
+
+        .round-orbit-core {
+          background:
+            linear-gradient(
+              135deg,
+              #60a5fa 0%,
+              #2563eb 55%,
+              #4f46e5 100%
+            ) !important;
+
+          color:
+            #ffffff !important;
+
+          box-shadow:
+            0 18px 45px
+            rgba(
+              37,
+              99,
+              235,
+              0.32
+            ) !important;
+        }
+
+
+        .round-orbit-core svg {
+          color:
+            #ffffff !important;
+
+          stroke:
+            #ffffff !important;
+        }
+
 
       `}</style>
 
@@ -2589,24 +2796,44 @@ function RoundDetails() {
             JOURNEY
         ================================================= */}
 
-        <ChitJourney
-          roundId={
-            roundNumber
-          }
+        <div className="space-y-6">
+
+          <RoundVisualAnalytics
+            contributions={contributions || []}
+            bids={bids || []}
+            memberCapacity={
+              group?.number_of_members || 0
+            }
+            contributionAmount={
+              group?.contribution_amount || 0
+            }
+          />
+
+          <RoundLifecycleControl
+            roundId={roundId}
+            currentState={currentState}
+            canControl={
+              Number(group?.created_by) ===
+              Number(user?.user_id)
+            }
+            onChanged={fetchData}
+          />
+
+        </div>
+
+        <DisputePanel
+          roundId={roundId}
           currentState={
             currentState
           }
-          nextState={
-            journeyNextState
+          disputes={
+            disputes
           }
-          onAdvance={
-            handleAdvanceState
+          isCreator={
+            isCreator
           }
-          loading={
-            transitionLoading
-          }
-          message={
-            transitionMessage
+          onRefresh={
+            fetchData
           }
         />
 

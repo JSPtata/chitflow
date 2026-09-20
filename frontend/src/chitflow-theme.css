@@ -3322,3 +3322,1252 @@ textarea {
 .app-message {
     font-size: 13px !important;
 }
+
+/* =========================================================
+   CHITFLOW BLUE BRAND THEME
+   ========================================================= */
+
+:root {
+    /*
+      The existing components use names such as
+      --green-dark and --green-light.
+  
+      We keep those variable names for compatibility,
+      but change their actual colors to blue.
+    */
+
+    --green-dark: #1d4ed8;
+    --green-light: #eff6ff;
+
+    --blue-primary: #2563eb;
+    --blue-bright: #3b82f6;
+    --blue-dark: #1d4ed8;
+    --blue-deep: #1e40af;
+    --blue-soft: #dbeafe;
+    --blue-pale: #eff6ff;
+
+    --navy: #081a33;
+    --navy-light: #0d2748;
+
+    --border: #dbe4ef;
+    --muted: #64748b;
+
+    --shadow:
+        0 12px 35px rgba(15, 42, 77, 0.08);
+}
+
+
+/* =========================================================
+     BUTTONS / ACTIVE ELEMENTS
+     ========================================================= */
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline:
+        3px solid rgba(59, 130, 246, 0.22);
+
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+     COMMON BLUE ACCENTS
+     ========================================================= */
+
+.dashboard-stat-icon,
+.dashboard-section-icon,
+.dashboard-action-icon,
+.dashboard-group-icon,
+.notification-empty-icon {
+    background:
+        #eff6ff !important;
+
+    color:
+        #1d4ed8 !important;
+}
+
+
+/* =========================================================
+     DASHBOARD BUTTONS
+     ========================================================= */
+
+.dashboard-primary-action {
+    background:
+        linear-gradient(135deg,
+            #3b82f6,
+            #1d4ed8) !important;
+
+    box-shadow:
+        0 11px 28px rgba(37, 99, 235, 0.22) !important;
+}
+
+.dashboard-text-button,
+.dashboard-open-group {
+    border-color:
+        #bfdbfe !important;
+
+    color:
+        #1d4ed8 !important;
+}
+
+
+/* =========================================================
+     DASHBOARD HERO
+     ========================================================= */
+
+.dashboard-main-hero {
+    background:
+        radial-gradient(circle at 84% 15%,
+            rgba(96, 165, 250, 0.25),
+            transparent 25%),
+        radial-gradient(circle at 68% 115%,
+            rgba(37, 99, 235, 0.18),
+            transparent 35%),
+        linear-gradient(140deg,
+            #0d2748,
+            #081a33) !important;
+}
+
+.dashboard-eyebrow {
+    color:
+        #93c5fd !important;
+}
+
+.dashboard-hero-orbit {
+    border-color:
+        rgba(96, 165, 250, 0.24) !important;
+}
+
+.dashboard-hero-orbit::before {
+    border-color:
+        rgba(96, 165, 250, 0.28) !important;
+}
+
+.dashboard-hero-core {
+    background:
+        linear-gradient(145deg,
+            #60a5fa,
+            #2563eb) !important;
+
+    color:
+        #07182f !important;
+
+    box-shadow:
+        0 0 45px rgba(59, 130, 246, 0.26) !important;
+}
+
+
+/* =========================================================
+     CHITFLOW PROCESS
+     ========================================================= */
+
+.dashboard-process {
+    background:
+        radial-gradient(circle at 88% 8%,
+            rgba(96, 165, 250, 0.14),
+            transparent 25%),
+        linear-gradient(145deg,
+            #0c2648,
+            #07182f) !important;
+}
+
+.dashboard-process-header small {
+    color:
+        #93c5fd !important;
+}
+
+.dashboard-process-line::before {
+    background:
+        repeating-linear-gradient(to right,
+            rgba(96, 165, 250, 0.42) 0 6px,
+            transparent 6px 12px) !important;
+}
+
+.dashboard-stage-icon {
+    background:
+        #102f55 !important;
+
+    color:
+        #60a5fa !important;
+
+    border-color:
+        rgba(96, 165, 250, 0.25) !important;
+
+    box-shadow:
+        0 0 0 7px #0a2240 !important;
+}
+
+
+/* =========================================================
+     NOTIFICATIONS
+     ========================================================= */
+
+.notification-bell:hover,
+.notification-bell.active {
+    border-color:
+        #bfdbfe !important;
+
+    background:
+        #eff6ff !important;
+
+    color:
+        #1d4ed8 !important;
+}
+
+.notification-item.unread {
+    background:
+        #f5f9ff !important;
+}
+
+.notification-item.unread::before {
+    background:
+        #2563eb !important;
+}
+
+.notification-new-dot {
+    background:
+        #2563eb !important;
+}
+
+.notification-icon {
+    background:
+        #eff6ff !important;
+
+    color:
+        #1d4ed8 !important;
+}
+
+.notification-small-button:hover {
+    background:
+        #eff6ff !important;
+
+    color:
+        #1d4ed8 !important;
+}
+
+
+/* =========================================================
+     DISPUTE RESOLVED STATE
+     ========================================================= */
+
+.dispute-state.resolved {
+    background:
+        #eff6ff !important;
+
+    color:
+        #1d4ed8 !important;
+}
+
+.dispute-submit.resolve {
+    background:
+        linear-gradient(135deg,
+            #3b82f6,
+            #1d4ed8) !important;
+}
+
+.dispute-resolution {
+    border-color:
+        #bfdbfe !important;
+
+    background:
+        #f5f9ff !important;
+}
+
+.dispute-resolution span {
+    color:
+        #3b6ea8 !important;
+}
+
+.dispute-resolution p {
+    color:
+        #334e75 !important;
+}
+
+.dispute-message.success {
+    border-color:
+        #bfdbfe !important;
+
+    background:
+        #eff6ff !important;
+
+    color:
+        #1d4ed8 !important;
+}
+
+/* =========================================================
+   CHITFLOW — PREMIUM BLUE FINTECH UI
+   ========================================================= */
+
+:root {
+    --font-ui:
+        "Space Grotesk",
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    --font-mono:
+        "Space Mono",
+        "SFMono-Regular",
+        Consolas,
+        monospace;
+
+    --page-bg: #f1f3f6;
+    --surface: #ffffff;
+    --surface-soft: #f8f9fb;
+
+    --text-main: #111318;
+    --text-secondary: #5e6470;
+    --muted: #7b8493;
+
+    --border: #e2e5ea;
+
+    --blue-primary: #1478ff;
+    --blue-bright: #258cff;
+    --blue-dark: #0058d6;
+    --blue-soft: #eaf3ff;
+    --blue-pale: #f5f9ff;
+
+    --navy: #06111f;
+    --navy-soft: #0a1b34;
+
+    /*
+      Compatibility with components that
+      still use the old variable names.
+    */
+
+    --green-dark: #1478ff;
+    --green-light: #eaf3ff;
+
+    --shadow:
+        0 8px 28px rgba(18, 30, 48, 0.055);
+}
+
+
+/* =========================================================
+     BASE
+     ========================================================= */
+
+html {
+    font-size: 16px;
+}
+
+body {
+    margin: 0;
+
+    background:
+        #f1f3f6 !important;
+
+    color:
+        var(--text-main);
+
+    font-family:
+        var(--font-ui);
+
+    font-size:
+        16px !important;
+
+    line-height: 1.55;
+
+    -webkit-font-smoothing:
+        antialiased;
+}
+
+
+* {
+    box-sizing:
+        border-box;
+}
+
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+}
+
+
+/* =========================================================
+     PAGE
+     ========================================================= */
+
+.page-content {
+    max-width:
+        1500px;
+
+    margin:
+        0 auto;
+
+    padding:
+        28px 34px 50px;
+}
+
+
+.page-heading small {
+    font-family:
+        var(--font-mono);
+
+    color:
+        #1478ff;
+
+    font-size:
+        11px !important;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        0.1em;
+}
+
+
+.page-heading h1 {
+    margin:
+        7px 0 0;
+
+    color:
+        #111318;
+
+    font-size:
+        clamp(32px,
+            4vw,
+            48px);
+
+    line-height:
+        1.05;
+
+    letter-spacing:
+        -0.05em;
+}
+
+
+.page-heading p {
+    margin:
+        9px 0 0;
+
+    color:
+        #6b7280;
+
+    font-size:
+        14px;
+
+    line-height:
+        1.65;
+}
+
+
+/* =========================================================
+     GENERIC CARDS
+     ========================================================= */
+
+.dashboard-section,
+.dashboard-stat,
+.profile-card,
+.members-card,
+.chit-card,
+.round-card {
+    border:
+        1px solid #e2e5ea !important;
+
+    background:
+        #ffffff !important;
+
+    box-shadow:
+        0 6px 20px rgba(15,
+            23,
+            42,
+            0.045) !important;
+}
+
+
+/* =========================================================
+     BLUE ACCENT CARDS
+     ========================================================= */
+
+.dashboard-stat-icon,
+.dashboard-section-icon,
+.dashboard-action-icon,
+.dashboard-group-icon {
+    background:
+        #eaf3ff !important;
+
+    color:
+        #1478ff !important;
+}
+
+
+/* =========================================================
+     BUTTONS
+     ========================================================= */
+
+.dashboard-primary-action,
+.primary-button,
+button.primary {
+    border:
+        none !important;
+
+    background:
+        #1478ff !important;
+
+    color:
+        white !important;
+
+    box-shadow:
+        none !important;
+}
+
+
+.dashboard-primary-action:hover,
+.primary-button:hover,
+button.primary:hover {
+    background:
+        #006ce6 !important;
+}
+
+
+.dashboard-text-button,
+.dashboard-open-group {
+    border:
+        1px solid #d8e5f6 !important;
+
+    background:
+        #ffffff !important;
+
+    color:
+        #1478ff !important;
+}
+
+
+/* =========================================================
+     INPUTS
+     ========================================================= */
+
+input,
+select,
+textarea {
+    border:
+        1px solid #dde2e9;
+
+    background:
+        #ffffff;
+
+    color:
+        #15181e;
+}
+
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color:
+        #1478ff !important;
+
+    box-shadow:
+        0 0 0 4px rgba(20,
+            120,
+            255,
+            0.10) !important;
+
+    outline:
+        none;
+}
+
+
+/* =========================================================
+     TABLES
+     ========================================================= */
+
+table {
+    border-collapse:
+        separate;
+
+    border-spacing:
+        0;
+
+    overflow:
+        hidden;
+}
+
+
+thead {
+    background:
+        #f8f9fb;
+}
+
+
+th {
+    color:
+        #616875;
+
+    font-size:
+        12px;
+
+    font-weight:
+        600;
+}
+
+
+td {
+    color:
+        #272b33;
+
+    font-size:
+        13px;
+}
+
+
+/* =========================================================
+     MONO VALUES
+     ========================================================= */
+
+.amount,
+.state-name,
+.round-number,
+.chit-id,
+.audit-hash {
+    font-family:
+        var(--font-mono);
+}
+
+
+/* =========================================================
+     STATUS
+     ========================================================= */
+
+.status-success {
+    background:
+        #eaf8ef !important;
+
+    color:
+        #23854b !important;
+}
+
+
+.status-warning {
+    background:
+        #fff6df !important;
+
+    color:
+        #936a13 !important;
+}
+
+
+.status-danger {
+    background:
+        #fff0ef !important;
+
+    color:
+        #c24942 !important;
+}
+
+
+/* =========================================================
+     SCROLLBAR
+     ========================================================= */
+
+::-webkit-scrollbar {
+    width:
+        8px;
+
+    height:
+        8px;
+}
+
+
+::-webkit-scrollbar-track {
+    background:
+        transparent;
+}
+
+
+::-webkit-scrollbar-thumb {
+    background:
+        #ccd2da;
+
+    border-radius:
+        20px;
+}
+
+/* =========================================================
+   CHITFLOW READABILITY — LARGER UI TEXT
+   ========================================================= */
+
+body {
+    font-size: 16px !important;
+}
+
+/* Top navigation */
+
+.fintech-brand-name {
+    font-size: 22px !important;
+}
+
+.fintech-date {
+    font-size: 14px !important;
+}
+
+.fintech-nav-button {
+    font-size: 15px !important;
+}
+
+.fintech-search input {
+    font-size: 14px !important;
+}
+
+/* Dashboard financial cards */
+
+.finance-card-title h2 {
+    font-size: 20px !important;
+}
+
+.finance-card-title p {
+    font-size: 14px !important;
+}
+
+.finance-pill {
+    font-size: 13px !important;
+}
+
+.portfolio-label,
+.round-overview-label {
+    font-size: 14px !important;
+}
+
+.portfolio-subline {
+    font-size: 14px !important;
+}
+
+.portfolio-button {
+    font-size: 14px !important;
+}
+
+.round-active-pill {
+    font-size: 13px !important;
+}
+
+.round-bar-value {
+    font-size: 14px !important;
+}
+
+.round-bar-label {
+    font-size: 13px !important;
+}
+
+.allocation-total span {
+    font-size: 13px !important;
+}
+
+.allocation-name {
+    font-size: 14px !important;
+}
+
+.allocation-value {
+    font-size: 12px !important;
+}
+
+.managed-copy strong {
+    font-size: 14px !important;
+}
+
+.managed-copy span {
+    font-size: 12px !important;
+}
+
+.managed-empty {
+    font-size: 14px !important;
+}
+
+/* Tables */
+
+.groups-table th {
+    font-size: 13px !important;
+}
+
+.groups-table td {
+    font-size: 14px !important;
+}
+
+.table-group strong {
+    font-size: 14px !important;
+}
+
+.table-group span {
+    font-size: 11px !important;
+}
+
+.table-money {
+    font-size: 13px !important;
+}
+
+.table-status {
+    font-size: 12px !important;
+}
+
+/* Process */
+
+.process-header small {
+    font-size: 12px !important;
+}
+
+.process-header p {
+    font-size: 15px !important;
+}
+
+.process-stage strong {
+    font-size: 15px !important;
+}
+
+.process-stage span {
+    font-size: 12px !important;
+}
+
+/* General */
+
+button {
+    font-size: 14px;
+}
+
+input,
+select,
+textarea {
+    font-size: 15px !important;
+}
+
+small {
+    font-size: 12px !important;
+}
+
+/* =========================================================
+   CHITFLOW TYPOGRAPHY — REFERENCE STYLE
+   ========================================================= */
+
+:root {
+    --font-ui:
+        "Inter",
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    /*
+      We intentionally use Inter here too.
+      The reference does not have the strong
+      developer/terminal look of a mono font.
+    */
+
+    --font-mono:
+        "Inter",
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}
+
+
+html,
+body {
+    font-family:
+        var(--font-ui) !important;
+}
+
+
+body {
+    font-size:
+        16px !important;
+
+    font-weight:
+        400;
+
+    letter-spacing:
+        -0.01em;
+}
+
+
+button,
+input,
+select,
+textarea {
+    font-family:
+        var(--font-ui) !important;
+}
+
+
+/* =========================================================
+     HEADINGS
+     ========================================================= */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family:
+        var(--font-ui) !important;
+
+    color:
+        inherit;
+
+    font-weight:
+        600;
+}
+
+
+h1 {
+    letter-spacing:
+        -0.055em;
+}
+
+
+h2 {
+    letter-spacing:
+        -0.035em;
+}
+
+
+h3 {
+    letter-spacing:
+        -0.025em;
+}
+
+
+/* =========================================================
+     NUMBERS / MONEY / IDS
+     Reference-style clean financial numbers
+     ========================================================= */
+
+.portfolio-amount,
+.round-overview-number,
+.dashboard-stat strong,
+.groups-stat strong,
+.members-stat strong,
+.profile-stat strong,
+.chit-detail-stat strong,
+.group-money,
+.table-money,
+.round-number,
+.round-state,
+.group-summary-row strong,
+.allocation-value {
+    font-family:
+        var(--font-ui) !important;
+
+    font-variant-numeric:
+        tabular-nums;
+
+    letter-spacing:
+        -0.035em;
+}
+
+
+/* =========================================================
+     LARGE FINANCIAL VALUES
+     ========================================================= */
+
+.portfolio-amount {
+    font-weight:
+        600 !important;
+
+    letter-spacing:
+        -0.06em !important;
+}
+
+
+.round-overview-number {
+    font-weight:
+        600 !important;
+}
+
+
+/* =========================================================
+     NAVIGATION
+     ========================================================= */
+
+.fintech-brand-name {
+    font-family:
+        var(--font-ui) !important;
+
+    font-weight:
+        600;
+}
+
+
+.fintech-nav-button {
+    font-family:
+        var(--font-ui) !important;
+
+    font-size:
+        15px !important;
+
+    font-weight:
+        500;
+}
+
+
+/* =========================================================
+     CARD TITLES
+     ========================================================= */
+
+.finance-card-title h2,
+.group-directory-title h2,
+.members-directory-title h2,
+.profile-card-header h2,
+.chit-panel-header h2,
+.rounds-header h2 {
+    font-family:
+        var(--font-ui) !important;
+
+    font-weight:
+        600 !important;
+
+    letter-spacing:
+        -0.025em !important;
+}
+
+
+/* =========================================================
+     LABELS
+     ========================================================= */
+
+small,
+.finance-card-title p,
+.group-directory-title p,
+.members-directory-title p,
+.profile-card-header p,
+.chit-panel-header p,
+.rounds-header p {
+    font-family:
+        var(--font-ui) !important;
+}
+
+
+/* =========================================================
+     REMOVE OLD MONO FEEL
+     ========================================================= */
+
+.dashboard-eyebrow,
+.process-header small,
+.profile-copy small,
+.chit-detail-copy small,
+.groups-intro-copy small,
+.members-intro-copy small {
+    font-family:
+        var(--font-ui) !important;
+
+    font-weight:
+        600 !important;
+
+    letter-spacing:
+        0.08em !important;
+}
+
+/* =========================================================
+   DARK BACKGROUND TEXT VISIBILITY FIX
+   ========================================================= */
+
+/*
+  Main dark ChitFlow sections
+*/
+
+.fintech-header,
+.profile-hero,
+.chit-detail-hero,
+.process-card,
+.dashboard-main-hero,
+.process-constellation {
+    color: #ffffff;
+}
+
+
+/* Headings on dark surfaces */
+
+.fintech-header h1,
+.fintech-header h2,
+.fintech-header h3,
+.profile-hero h1,
+.profile-hero h2,
+.profile-hero h3,
+.chit-detail-hero h1,
+.chit-detail-hero h2,
+.chit-detail-hero h3,
+.process-card h1,
+.process-card h2,
+.process-card h3,
+.dashboard-main-hero h1,
+.dashboard-main-hero h2,
+.dashboard-main-hero h3,
+.process-constellation h1,
+.process-constellation h2,
+.process-constellation h3 {
+    color: #ffffff !important;
+}
+
+
+/* Important text */
+
+.fintech-header strong,
+.profile-hero strong,
+.chit-detail-hero strong,
+.process-card strong,
+.dashboard-main-hero strong,
+.process-constellation strong {
+    color: #ffffff !important;
+}
+
+
+/* Normal descriptive text */
+
+.fintech-header p,
+.profile-hero p,
+.chit-detail-hero p,
+.process-card p,
+.dashboard-main-hero p,
+.process-constellation p {
+    color: rgba(255, 255, 255, 0.68) !important;
+}
+
+
+/* Small labels */
+
+.fintech-header small,
+.profile-hero small,
+.chit-detail-hero small,
+.process-card small,
+.dashboard-main-hero small,
+.process-constellation small {
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+
+
+/* Navigation inside dark header */
+
+.fintech-header .fintech-brand-name {
+    color: #ffffff !important;
+}
+
+.fintech-header .fintech-nav-button {
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.fintech-header .fintech-nav-button:hover {
+    color: #ffffff !important;
+}
+
+.fintech-header .fintech-nav-button.active {
+    background: #ffffff !important;
+    color: #111318 !important;
+}
+
+
+/* Greeting */
+
+.fintech-greeting h1,
+.fintech-greeting h1 span {
+    color: #ffffff !important;
+}
+
+.fintech-date {
+    color: rgba(255, 255, 255, 0.62) !important;
+}
+
+
+/* Search on dark navigation */
+
+.fintech-search {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.fintech-search input {
+    color: #ffffff !important;
+}
+
+.fintech-search input::placeholder {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+
+/* Dark hero badges */
+
+.profile-hero-badge span,
+.chit-role-badge span {
+    color: rgba(255, 255, 255, 0.62) !important;
+}
+
+.profile-hero-badge strong,
+.chit-role-badge strong {
+    color: #ffffff !important;
+}
+
+
+/* Process diagram */
+
+.process-stage strong,
+.constellation-stage strong {
+    color: #ffffff !important;
+}
+
+.process-stage span,
+.constellation-stage span {
+    color: rgba(255, 255, 255, 0.62) !important;
+}
+
+
+/* =========================================================
+   SHADCN / ACETERNITY DARK SURFACES
+   ========================================================= */
+
+/*
+  Utility for any future dark block.
+
+  Add className="chitflow-dark"
+  whenever you make another dark section.
+*/
+
+.chitflow-dark {
+    color: #ffffff;
+}
+
+.chitflow-dark h1,
+.chitflow-dark h2,
+.chitflow-dark h3,
+.chitflow-dark h4,
+.chitflow-dark strong {
+    color: #ffffff !important;
+}
+
+.chitflow-dark p {
+    color: rgba(255, 255, 255, 0.68) !important;
+}
+
+.chitflow-dark small,
+.chitflow-dark label {
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+
+/* =========================================================
+   CHITFLOW DARK CONTROL VISIBILITY
+   ========================================================= */
+
+.cf-nav-active,
+.cf-nav-active span,
+.cf-nav-active svg {
+    color: #ffffff !important;
+}
+
+.cf-nav-active svg {
+    stroke: #ffffff !important;
+}
+
+.cf-dark-action,
+.cf-dark-action span,
+.cf-dark-action svg {
+    color: #ffffff !important;
+}
+
+.cf-dark-action svg {
+    stroke: #ffffff !important;
+}

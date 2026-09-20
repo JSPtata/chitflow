@@ -1,14 +1,11 @@
 import {
   ArrowRight,
   CheckCircle2,
-  Eye,
-  EyeOff,
-  Fingerprint,
   Gavel,
   LockKeyhole,
   Mail,
   ShieldCheck,
-  UserPlus,
+  Sparkles,
   WalletCards,
 } from "lucide-react";
 
@@ -17,10 +14,35 @@ import {
 } from "react";
 
 import {
+  Link,
   useNavigate,
 } from "react-router-dom";
 
-import api from "../api/api";
+import api from "@/api/api";
+
+import {
+  BackgroundBeams,
+} from "@/components/ui/background-beams";
+
+import {
+  Button,
+} from "@/components/ui/button";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+import {
+  Input,
+} from "@/components/ui/input";
+
+import {
+  Label,
+} from "@/components/ui/label";
 
 function Login() {
   const navigate =
@@ -37,11 +59,6 @@ function Login() {
   ] = useState("");
 
   const [
-    showPassword,
-    setShowPassword,
-  ] = useState(false);
-
-  const [
     loading,
     setLoading,
   ] = useState(false);
@@ -51,18 +68,26 @@ function Login() {
     setError,
   ] = useState("");
 
-  /* =====================================================
-     LOGIN
-  ===================================================== */
-
   const handleLogin =
-    async (e) => {
-      e.preventDefault();
+    async (event) => {
+      event.preventDefault();
 
       setError("");
-      setLoading(true);
+
+      if (
+        !email.trim() ||
+        !password
+      ) {
+        setError(
+          "Enter your email and password."
+        );
+
+        return;
+      }
 
       try {
+        setLoading(true);
+
         const response =
           await api.post(
             "/users/login",
@@ -74,10 +99,19 @@ function Login() {
             }
           );
 
+        const token =
+          response.data
+            ?.access_token;
+
+        if (!token) {
+          throw new Error(
+            "Authentication token was not returned."
+          );
+        }
+
         localStorage.setItem(
           "token",
-          response.data
-            .access_token
+          token
         );
 
         navigate(
@@ -96,1352 +130,376 @@ function Login() {
     };
 
   return (
-    <div className="login-page">
+    <main className="min-h-screen bg-[#f4f5f7] p-3 text-[#111318] sm:p-5 lg:p-7">
 
-      <style>{`
+      <div className="mx-auto grid min-h-[calc(100vh-24px)] max-w-[1500px] overflow-hidden rounded-[28px] border border-black/[0.06] bg-white shadow-[0_25px_80px_rgba(15,23,42,0.08)] sm:min-h-[calc(100vh-40px)] lg:min-h-[calc(100vh-56px)] lg:grid-cols-[1.08fr_.92fr]">
 
-        /* =================================================
-           LOGIN PAGE
-        ================================================= */
+        {/* =================================================
+            LEFT VISUAL
+        ================================================= */}
 
-        .login-page {
-          min-height: 100vh;
+<section className="chitflow-dark relative isolate hidden overflow-hidden bg-[#05070b] p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-14">
 
-          display: grid;
+          <BackgroundBeams />
 
-          grid-template-columns:
-            minmax(
-              420px,
-              1fr
-            )
-            minmax(
-              480px,
-              0.9fr
-            );
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_18%,rgba(56,118,255,0.22),transparent_29%),radial-gradient(circle_at_25%_85%,rgba(111,76,255,0.12),transparent_30%)]"
+          />
 
-          background:
-            #f5f8f8;
+          {/* BRAND */}
 
-          font-family:
-            var(
-              --font-ui,
-              "Space Grotesk",
-              sans-serif
-            );
-        }
-
-        /* =================================================
-           LEFT PANEL
-        ================================================= */
-
-        .login-visual {
-          position: relative;
-
-          overflow: hidden;
-
-          min-height: 100vh;
-
-          padding:
-            48px;
-
-          display: flex;
-
-          flex-direction:
-            column;
-
-          justify-content:
-            space-between;
-
-          background:
-            radial-gradient(
-              circle at 16% 16%,
-              rgba(
-                86,
-                225,
-                183,
-                0.19
-              ),
-              transparent 26%
-            ),
-            radial-gradient(
-              circle at 88% 86%,
-              rgba(
-                59,
-                176,
-                201,
-                0.16
-              ),
-              transparent 29%
-            ),
-            linear-gradient(
-              145deg,
-              #0a3039,
-              #061d26
-            );
-
-          color: white;
-        }
-
-        .login-visual::before {
-          content: "";
-
-          position: absolute;
-
-          width: 460px;
-          height: 460px;
-
-          top: -250px;
-          right: -190px;
-
-          border:
-            1px solid
-            rgba(
-              255,
-              255,
-              255,
-              0.055
-            );
-
-          border-radius: 50%;
-        }
-
-        .login-visual::after {
-          content: "";
-
-          position: absolute;
-
-          width: 310px;
-          height: 310px;
-
-          left: -160px;
-          bottom: -150px;
-
-          border:
-            1px solid
-            rgba(
-              255,
-              255,
-              255,
-              0.055
-            );
-
-          border-radius: 50%;
-        }
-
-        /* =================================================
-           BRAND
-        ================================================= */
-
-        .login-brand {
-          position: relative;
-
-          z-index: 2;
-
-          display: flex;
-
-          align-items: center;
-
-          gap: 13px;
-        }
-
-        .login-logo {
-          width: 50px;
-          height: 50px;
-
-          display: grid;
-
-          place-items: center;
-
-          border-radius:
-            15px;
-
-          background:
-            linear-gradient(
-              145deg,
-              #69e0ba,
-              #269a76
-            );
-
-          color:
-            #06262d;
-
-          font-family:
-            var(
-              --font-mono,
-              "Space Mono",
-              monospace
-            );
-
-          font-size: 16px;
-
-          font-weight: 700;
-        }
-
-        .login-brand-copy
-        strong {
-          display: block;
-
-          color: white;
-
-          font-size: 21px;
-        }
-
-        .login-brand-copy
-        span {
-          display: block;
-
-          margin-top: 2px;
-
-          color:
-            #8daab1;
-
-          font-size: 12px;
-        }
-
-        /* =================================================
-           STORY
-        ================================================= */
-
-        .login-story {
-          position: relative;
-
-          z-index: 2;
-
-          max-width: 650px;
-        }
-
-        .login-eyebrow {
-          font-family:
-            var(
-              --font-mono,
-              "Space Mono",
-              monospace
-            );
-
-          color:
-            #67dfba;
-
-          font-size:
-            11px;
-
-          font-weight: 700;
-
-          letter-spacing:
-            0.12em;
-        }
-
-        .login-story h1 {
-          max-width: 620px;
-
-          margin:
-            16px 0 0;
-
-          color: white;
-
-          font-size:
-            clamp(
-              42px,
-              5.5vw,
-              72px
-            );
-
-          line-height:
-            0.96;
-
-          letter-spacing:
-            -0.06em;
-        }
-
-        .login-story > p {
-          max-width: 550px;
-
-          margin:
-            21px 0 0;
-
-          color:
-            #97b1b8;
-
-          font-size: 15px;
-
-          line-height: 1.75;
-        }
-
-        /* =================================================
-           FLOW
-        ================================================= */
-
-        .login-flow {
-          margin-top: 30px;
-
-          display: grid;
-
-          grid-template-columns:
-            repeat(
-              3,
-              minmax(
-                0,
-                1fr
-              )
-            );
-
-          gap: 11px;
-        }
-
-        .login-flow-card {
-          min-height: 115px;
-
-          padding: 15px;
-
-          border:
-            1px solid
-            rgba(
-              255,
-              255,
-              255,
-              0.07
-            );
-
-          border-radius: 16px;
-
-          background:
-            rgba(
-              255,
-              255,
-              255,
-              0.035
-            );
-        }
-
-        .login-flow-icon {
-          width: 38px;
-          height: 38px;
-
-          display: grid;
-
-          place-items: center;
-
-          border-radius:
-            11px;
-
-          background:
-            rgba(
-              93,
-              223,
-              184,
-              0.10
-            );
-
-          color:
-            #64dbb7;
-        }
-
-        .login-flow-card
-        strong {
-          display: block;
-
-          margin-top: 11px;
-
-          color:
-            #d9ebe6;
-
-          font-size: 13px;
-        }
-
-        .login-flow-card
-        span {
-          display: block;
-
-          margin-top: 4px;
-
-          color:
-            #75949c;
-
-          font-size: 12px;
-
-          line-height: 1.45;
-        }
-
-        .login-footnote {
-          position: relative;
-
-          z-index: 2;
-
-          color:
-            #63828b;
-
-          font-family:
-            var(
-              --font-mono,
-              "Space Mono",
-              monospace
-            );
-
-          font-size: 11px;
-        }
-
-        /* =================================================
-           RIGHT FORM SIDE
-        ================================================= */
-
-        .login-form-area {
-          padding:
-            50px
-            clamp(
-              35px,
-              7vw,
-              95px
-            );
-
-          display: flex;
-
-          align-items: center;
-
-          justify-content: center;
-        }
-
-        .login-form-wrap {
-          width: 100%;
-
-          max-width: 520px;
-        }
-
-        /* =================================================
-           HEADING
-        ================================================= */
-
-        .login-form-heading
-        small {
-          font-family:
-            var(
-              --font-mono,
-              "Space Mono",
-              monospace
-            );
-
-          color:
-            #0c8967;
-
-          font-size:
-            11px !important;
-
-          font-weight: 700;
-
-          letter-spacing:
-            0.1em;
-        }
-
-        .login-form-heading h2 {
-          margin:
-            10px 0 0;
-
-          color:
-            #142f37;
-
-          font-size:
-            clamp(
-              37px,
-              4vw,
-              49px
-            );
-
-          line-height: 1.04;
-
-          letter-spacing:
-            -0.05em;
-        }
-
-        .login-form-heading p {
-          max-width: 460px;
-
-          margin:
-            13px 0 0;
-
-          color:
-            #73858b;
-
-          font-size: 14px;
-
-          line-height: 1.65;
-        }
-
-        /* =================================================
-           FORM
-        ================================================= */
-
-        .login-form {
-          margin-top: 31px;
-
-          display: grid;
-
-          gap: 18px;
-        }
-
-        .login-field {
-          display: flex;
-
-          flex-direction:
-            column;
-
-          gap: 8px;
-        }
-
-        .login-field > span {
-          font-family:
-            var(
-              --font-mono,
-              "Space Mono",
-              monospace
-            );
-
-          color:
-            #596f75;
-
-          font-size:
-            11px !important;
-
-          font-weight: 700;
-
-          letter-spacing:
-            0.055em;
-        }
-
-        .login-input-wrap {
-          position: relative;
-        }
-
-        .login-input-icon {
-          position: absolute;
-
-          left: 14px;
-
-          top: 50%;
-
-          transform:
-            translateY(-50%);
-
-          color:
-            #809197;
-
-          pointer-events: none;
-        }
-
-        .login-input-wrap
-        input {
-          width: 100%;
-
-          height: 53px;
-
-          padding:
-            0 47px
-            0 45px;
-
-          border:
-            1px solid
-            #d8e3e5;
-
-          border-radius:
-            13px;
-
-          background: white;
-
-          color:
-            #183139;
-
-          font-size:
-            15px !important;
-
-          outline: none;
-
-          transition:
-            border-color
-            0.2s ease,
-            box-shadow
-            0.2s ease;
-        }
-
-        .login-input-wrap
-        input::placeholder {
-          color:
-            #a3b0b4;
-        }
-
-        .login-input-wrap
-        input:focus {
-          border-color:
-            #64bea3;
-
-          box-shadow:
-            0 0 0 4px
-            rgba(
-              25,
-              158,
-              119,
-              0.08
-            );
-        }
-
-        /* =================================================
-           PASSWORD
-        ================================================= */
-
-        .login-password-toggle {
-          position: absolute;
-
-          right: 9px;
-          top: 50%;
-
-          width: 36px;
-          height: 36px;
-
-          transform:
-            translateY(-50%);
-
-          display: grid;
-
-          place-items: center;
-
-          border: none;
-
-          border-radius:
-            9px;
-
-          background:
-            transparent;
-
-          color:
-            #71868c;
-
-          cursor: pointer;
-        }
-
-        /* =================================================
-           ERROR
-        ================================================= */
-
-        .login-error {
-          padding:
-            13px 15px;
-
-          display: flex;
-
-          align-items:
-            flex-start;
-
-          gap: 9px;
-
-          border:
-            1px solid
-            #ecd5d5;
-
-          border-radius:
-            12px;
-
-          background:
-            #fff8f8;
-
-          color:
-            #9f4646;
-
-          font-size: 13px;
-
-          line-height: 1.5;
-        }
-
-        /* =================================================
-           LOGIN BUTTON
-        ================================================= */
-
-        .login-submit {
-          min-height: 52px;
-
-          display: flex;
-
-          align-items: center;
-
-          justify-content:
-            center;
-
-          gap: 9px;
-
-          border: none;
-
-          border-radius:
-            13px;
-
-          background:
-            linear-gradient(
-              135deg,
-              #1aaa80,
-              #0b765a
-            );
-
-          color: white;
-
-          font-size:
-            14px !important;
-
-          font-weight: 700;
-
-          cursor: pointer;
-
-          box-shadow:
-            0 11px 27px
-            rgba(
-              15,
-              132,
-              99,
-              0.20
-            );
-
-          transition:
-            0.2s ease;
-        }
-
-        .login-submit:hover:not(:disabled) {
-          transform:
-            translateY(-2px);
-
-          box-shadow:
-            0 16px 32px
-            rgba(
-              15,
-              132,
-              99,
-              0.24
-            );
-        }
-
-        .login-submit:disabled {
-          opacity: 0.65;
-
-          cursor:
-            not-allowed;
-        }
-
-        /* =================================================
-           DIVIDER
-        ================================================= */
-
-        .login-divider {
-          margin:
-            24px 0;
-
-          display: flex;
-
-          align-items: center;
-
-          gap: 12px;
-        }
-
-        .login-divider::before,
-        .login-divider::after {
-          content: "";
-
-          height: 1px;
-
-          flex: 1;
-
-          background:
-            #dce5e7;
-        }
-
-        .login-divider span {
-          color:
-            #87969b;
-
-          font-size: 12px;
-        }
-
-        /* =================================================
-           CREATE ACCOUNT
-        ================================================= */
-
-        .login-register-card {
-          padding: 18px;
-
-          display: flex;
-
-          align-items: center;
-
-          justify-content:
-            space-between;
-
-          gap: 18px;
-
-          border:
-            1px solid
-            #d7e7e2;
-
-          border-radius: 16px;
-
-          background:
-            linear-gradient(
-              145deg,
-              #f3faf7,
-              #ffffff
-            );
-        }
-
-        .login-register-main {
-          display: flex;
-
-          align-items: center;
-
-          gap: 12px;
-
-          min-width: 0;
-        }
-
-        .login-register-icon {
-          width: 42px;
-          height: 42px;
-
-          display: grid;
-
-          place-items: center;
-
-          flex: 0 0 auto;
-
-          border-radius:
-            13px;
-
-          background:
-            #dff5ed;
-
-          color:
-            #087659;
-        }
-
-        .login-register-copy
-        strong {
-          display: block;
-
-          color:
-            #25443e;
-
-          font-size: 14px;
-        }
-
-        .login-register-copy
-        span {
-          display: block;
-
-          margin-top: 4px;
-
-          color:
-            #758a86;
-
-          font-size: 12px;
-
-          line-height: 1.45;
-        }
-
-        .login-register-button {
-          min-height: 41px;
-
-          padding:
-            0 14px;
-
-          display: inline-flex;
-
-          align-items: center;
-
-          justify-content:
-            center;
-
-          gap: 6px;
-
-          flex: 0 0 auto;
-
-          border:
-            1px solid
-            #bcdcd2;
-
-          border-radius:
-            11px;
-
-          background: white;
-
-          color:
-            #087659;
-
-          font-size:
-            12px !important;
-
-          font-weight: 700;
-
-          cursor: pointer;
-
-          transition:
-            0.2s ease;
-        }
-
-        .login-register-button:hover {
-          transform:
-            translateX(2px);
-
-          background:
-            #eff9f5;
-        }
-
-        /* =================================================
-           SECURITY NOTE
-        ================================================= */
-
-        .login-security-note {
-          margin-top: 19px;
-
-          display: flex;
-
-          align-items:
-            center;
-
-          justify-content:
-            center;
-
-          gap: 7px;
-
-          color:
-            #87969b;
-
-          font-size: 12px;
-        }
-
-        /* =================================================
-           RESPONSIVE
-        ================================================= */
-
-        @media (
-          max-width: 1000px
-        ) {
-
-          .login-page {
-            grid-template-columns:
-              1fr;
-          }
-
-          .login-visual {
-            min-height:
-              auto;
-
-            padding:
-              36px;
-
-            gap: 55px;
-          }
-
-          .login-story h1 {
-            max-width:
-              720px;
-          }
-
-          .login-footnote {
-            display: none;
-          }
-
-        }
-
-        @media (
-          max-width: 620px
-        ) {
-
-          .login-visual {
-            display: none;
-          }
-
-          .login-form-area {
-            min-height:
-              100vh;
-
-            padding:
-              28px 20px;
-          }
-
-          .login-register-card {
-            align-items:
-              flex-start;
-
-            flex-direction:
-              column;
-          }
-
-          .login-register-button {
-            width: 100%;
-          }
-
-        }
-
-      `}</style>
-
-      {/* =================================================
-          LEFT PANEL
-      ================================================= */}
-
-      <section className="login-visual">
-
-        <div className="login-brand">
-
-          <div className="login-logo">
-            CF
-          </div>
-
-          <div className="login-brand-copy">
-
-            <strong>
-              ChitFlow
-            </strong>
-
-            <span>
-              Transparent community finance
-            </span>
-
-          </div>
-
-        </div>
-
-        <div className="login-story">
-
-          <span className="login-eyebrow">
-            COMMUNITY FINANCE • REIMAGINED
-          </span>
-
-          <h1>
-            Every round.
-            Every rupee.
-            Traceable.
-          </h1>
-
-          <p>
-            ChitFlow brings
-            contributions, verification,
-            bidding, payouts and audit
-            history into one controlled
-            digital workflow.
-          </p>
-
-          <div className="login-flow">
-
-            <div className="login-flow-card">
-
-              <div className="login-flow-icon">
-
-                <WalletCards
-                  size={19}
-                />
-
-              </div>
-
-              <strong>
-                Contribute
-              </strong>
-
-              <span>
-                Record member payments
-                round by round.
-              </span>
-
-            </div>
-
-            <div className="login-flow-card">
-
-              <div className="login-flow-icon">
-
-                <Gavel
-                  size={19}
-                />
-
-              </div>
-
-              <strong>
-                Coordinate
-              </strong>
-
-              <span>
-                Manage bidding and
-                controlled round states.
-              </span>
-
-            </div>
-
-            <div className="login-flow-card">
-
-              <div className="login-flow-icon">
-
-                <Fingerprint
-                  size={19}
-                />
-
-              </div>
-
-              <strong>
-                Trace
-              </strong>
-
-              <span>
-                Follow important events
-                through the audit ledger.
-              </span>
-
-            </div>
-
-          </div>
-
-        </div>
-
-        <div className="login-footnote">
-          CHITFLOW • DIGITAL CHIT FUND COORDINATION
-        </div>
-
-      </section>
-
-      {/* =================================================
-          LOGIN AREA
-      ================================================= */}
-
-      <section className="login-form-area">
-
-        <div className="login-form-wrap">
-
-          <div className="login-form-heading">
-
-            <small>
-              WELCOME BACK
-            </small>
-
-            <h2>
-              Sign in to your workspace.
-            </h2>
-
-            <p>
-              Access your chit groups,
-              members, rounds and
-              transaction workflow.
-            </p>
-
-          </div>
-
-          {/* =================================================
-              LOGIN FORM
-          ================================================= */}
-
-          <form
-            className="login-form"
-            onSubmit={
-              handleLogin
+          <button
+            type="button"
+            onClick={() =>
+              navigate("/")
             }
+            className="relative z-10 flex w-fit items-center gap-3"
           >
 
-            {/* EMAIL */}
+            <span className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/10 backdrop-blur-xl">
 
-            <label className="login-field">
+              <WalletCards
+                size={20}
+              />
 
-              <span>
-                EMAIL ADDRESS
-              </span>
-
-              <div className="login-input-wrap">
-
-                <Mail
-                  className="login-input-icon"
-                  size={18}
-                />
-
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) =>
-                    setEmail(
-                      e.target.value
-                    )
-                  }
-                  placeholder="name@example.com"
-                  autoComplete="email"
-                  required
-                />
-
-              </div>
-
-            </label>
-
-            {/* PASSWORD */}
-
-            <label className="login-field">
-
-              <span>
-                PASSWORD
-              </span>
-
-              <div className="login-input-wrap">
-
-                <LockKeyhole
-                  className="login-input-icon"
-                  size={18}
-                />
-
-                <input
-                  type={
-                    showPassword
-                      ? "text"
-                      : "password"
-                  }
-                  value={password}
-                  onChange={(e) =>
-                    setPassword(
-                      e.target.value
-                    )
-                  }
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  required
-                />
-
-                <button
-                  type="button"
-                  className="login-password-toggle"
-                  aria-label={
-                    showPassword
-                      ? "Hide password"
-                      : "Show password"
-                  }
-                  onClick={() =>
-                    setShowPassword(
-                      !showPassword
-                    )
-                  }
-                >
-
-                  {showPassword ? (
-                    <EyeOff
-                      size={18}
-                    />
-                  ) : (
-                    <Eye
-                      size={18}
-                    />
-                  )}
-
-                </button>
-
-              </div>
-
-            </label>
-
-            {/* ERROR */}
-
-            {error && (
-
-              <div className="login-error">
-
-                <ShieldCheck
-                  size={18}
-                />
-
-                <span>
-                  {error}
-                </span>
-
-              </div>
-
-            )}
-
-            {/* SIGN IN */}
-
-            <button
-              type="submit"
-              className="login-submit"
-              disabled={loading}
-            >
-
-              {loading ? (
-                "Signing in..."
-              ) : (
-                <>
-                  Sign in to ChitFlow
-
-                  <ArrowRight
-                    size={17}
-                  />
-                </>
-              )}
-
-            </button>
-
-          </form>
-
-          {/* =================================================
-              REGISTER
-          ================================================= */}
-
-          <div className="login-divider">
-
-            <span>
-              New to ChitFlow?
             </span>
 
-          </div>
+            <span className="text-[21px] font-semibold tracking-[-0.045em]">
+              ChitFlow
+            </span>
 
-          <div className="login-register-card">
+          </button>
 
-            <div className="login-register-main">
+          {/* MAIN COPY */}
 
-              <div className="login-register-icon">
+          <div className="relative z-10 max-w-[650px] py-16">
 
-                <UserPlus
-                  size={19}
-                />
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-[13px] font-medium text-white/65 backdrop-blur-xl">
+
+              <Sparkles
+                size={14}
+                className="text-blue-300"
+              />
+
+              Transparent community finance
+
+            </div>
+
+            <h1 className="mt-7 max-w-[650px] text-[54px] font-medium leading-[0.99] tracking-[-0.065em] xl:text-[66px]">
+
+              Every financial
+              circle, clearly
+              connected.
+
+            </h1>
+
+            <p className="mt-6 max-w-[580px] text-[17px] leading-8 text-white/50">
+
+              Access your chit groups,
+              contributions, bidding,
+              disputes and payouts through
+              one controlled workflow.
+
+            </p>
+
+            <div className="mt-10 grid max-w-[600px] gap-3">
+
+              <div className="flex items-center gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.045] p-4 backdrop-blur-xl">
+
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300">
+
+                  <CheckCircle2
+                    size={18}
+                  />
+
+                </span>
+
+                <div>
+
+                  <div className="text-[15px] font-medium text-white/90">
+                    Verified contributions
+                  </div>
+
+                  <div className="mt-1 text-[13px] text-white/40">
+                    Track payment records through controlled verification.
+                  </div>
+
+                </div>
 
               </div>
 
-              <div className="login-register-copy">
+              <div className="flex items-center gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.045] p-4 backdrop-blur-xl">
 
-                <strong>
-                  Create a member account
-                </strong>
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300">
 
-                <span>
-                  Register first, then join
-                  participating chit groups.
+                  <Gavel
+                    size={18}
+                  />
+
                 </span>
+
+                <div>
+
+                  <div className="text-[15px] font-medium text-white/90">
+                    Structured bidding
+                  </div>
+
+                  <div className="mt-1 text-[13px] text-white/40">
+                    Participate only when the round lifecycle permits it.
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div className="flex items-center gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.045] p-4 backdrop-blur-xl">
+
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300">
+
+                  <ShieldCheck
+                    size={18}
+                  />
+
+                </span>
+
+                <div>
+
+                  <div className="text-[15px] font-medium text-white/90">
+                    Auditable history
+                  </div>
+
+                  <div className="mt-1 text-[13px] text-white/40">
+                    Review important lifecycle events and state transitions.
+                  </div>
+
+                </div>
 
               </div>
 
             </div>
+
+          </div>
+
+          <div className="relative z-10 text-[13px] text-white/30">
+            Digital Chit Fund Coordination System
+          </div>
+
+        </section>
+
+        {/* =================================================
+            LOGIN
+        ================================================= */}
+
+        <section className="flex min-h-full items-center justify-center px-5 py-10 sm:px-10 lg:px-12 xl:px-20">
+
+          <div className="w-full max-w-[500px]">
+
+            {/* MOBILE BRAND */}
 
             <button
               type="button"
-              className="login-register-button"
               onClick={() =>
-                navigate(
-                  "/register"
-                )
+                navigate("/")
               }
+              className="mb-12 flex items-center gap-3 lg:hidden"
             >
 
-              Create account
+              <span className="flex size-10 items-center justify-center rounded-xl bg-[#111318] text-white">
 
-              <ArrowRight
-                size={14}
-              />
+                <WalletCards
+                  size={18}
+                />
+
+              </span>
+
+              <span className="text-[20px] font-semibold tracking-[-0.04em]">
+                ChitFlow
+              </span>
 
             </button>
 
+            <Card className="border-0 bg-transparent p-0 shadow-none">
+
+              <CardHeader className="space-y-0 px-0 pb-8">
+
+                <div className="mb-6 flex size-12 items-center justify-center rounded-2xl bg-[#f0f3f7]">
+
+                  <LockKeyhole
+                    size={21}
+                    className="text-[#16191e]"
+                  />
+
+                </div>
+
+                <CardTitle className="text-[36px] font-semibold leading-[1.05] tracking-[-0.055em] sm:text-[42px]">
+                  Welcome back
+                </CardTitle>
+
+                <CardDescription className="mt-4 max-w-[420px] text-[15px] leading-7 text-black/50">
+                  Sign in to continue to
+                  your ChitFlow financial
+                  workspace.
+                </CardDescription>
+
+              </CardHeader>
+
+              <CardContent className="px-0">
+
+                <form
+                  onSubmit={
+                    handleLogin
+                  }
+                  className="space-y-5"
+                >
+
+                  {/* EMAIL */}
+
+                  <div className="space-y-2.5">
+
+                    <Label
+                      htmlFor="email"
+                      className="text-[14px] font-medium"
+                    >
+                      Email address
+                    </Label>
+
+                    <div className="relative">
+
+                      <Mail
+                        size={17}
+                        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-black/35"
+                      />
+
+                      <Input
+                        id="email"
+                        type="email"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(event) =>
+                          setEmail(
+                            event.target.value
+                          )
+                        }
+                        placeholder="name@example.com"
+                        className="h-12 rounded-xl border-black/10 bg-[#fafafa] pl-11 text-[15px] shadow-none focus-visible:border-blue-500 focus-visible:ring-blue-500/15"
+                        required
+                      />
+
+                    </div>
+
+                  </div>
+
+                  {/* PASSWORD */}
+
+                  <div className="space-y-2.5">
+
+                    <Label
+                      htmlFor="password"
+                      className="text-[14px] font-medium"
+                    >
+                      Password
+                    </Label>
+
+                    <div className="relative">
+
+                      <LockKeyhole
+                        size={17}
+                        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-black/35"
+                      />
+
+                      <Input
+                        id="password"
+                        type="password"
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(event) =>
+                          setPassword(
+                            event.target.value
+                          )
+                        }
+                        placeholder="Enter your password"
+                        className="h-12 rounded-xl border-black/10 bg-[#fafafa] pl-11 text-[15px] shadow-none focus-visible:border-blue-500 focus-visible:ring-blue-500/15"
+                        required
+                      />
+
+                    </div>
+
+                  </div>
+
+                  {/* ERROR */}
+
+                  {error && (
+
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] leading-6 text-red-700">
+                      {error}
+                    </div>
+
+                  )}
+
+                  {/* SUBMIT */}
+
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="h-12 w-full rounded-xl bg-[#111318] text-[15px] font-semibold text-white hover:bg-[#25282d]"
+                  >
+
+                    {loading
+                      ? "Signing in..."
+                      : "Sign in"}
+
+                    {!loading && (
+                      <ArrowRight
+                        size={17}
+                      />
+                    )}
+
+                  </Button>
+
+                </form>
+
+                {/* REGISTER */}
+
+                <div className="mt-8 border-t border-black/[0.07] pt-7 text-center">
+
+                  <p className="text-[14px] text-black/50">
+
+                    New to ChitFlow?{" "}
+
+                    <Link
+                      to="/register"
+                      className="font-semibold text-[#111318] transition hover:text-blue-600"
+                    >
+                      Create an account
+                    </Link>
+
+                  </p>
+
+                </div>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="mt-4 w-full rounded-xl text-[13px] text-black/45"
+                  onClick={() =>
+                    navigate("/")
+                  }
+                >
+                  Back to ChitFlow
+                </Button>
+
+              </CardContent>
+
+            </Card>
+
           </div>
 
-          <div className="login-security-note">
+        </section>
 
-            <CheckCircle2
-              size={14}
-            />
+      </div>
 
-            Authenticated ChitFlow workspace
-
-          </div>
-
-        </div>
-
-      </section>
-
-    </div>
+    </main>
   );
 }
 

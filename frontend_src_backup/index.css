@@ -54,15 +54,15 @@ button,
 input,
 textarea,
 select {
-  font: inherit;
+  font: #111318;
 }
 
 button {
-  color: inherit;
+  color: #111318;
 }
 
 a {
-  color: inherit;
+  color: #111318;
   text-decoration: none;
 }
 

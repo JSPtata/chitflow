@@ -1,1535 +1,1070 @@
 import {
-    ArrowRight,
-    CalendarDays,
-    CheckCircle2,
-    Crown,
-    Search,
-    ShieldCheck,
-    UserPlus,
-    Users,
-    WalletCards,
-  } from "lucide-react";
-  
-  import {
-    useEffect,
-    useMemo,
-    useState,
-  } from "react";
-  
-  import {
-    useNavigate,
-  } from "react-router-dom";
-  
-  import api from "../api/api";
-  import AppShell from "../components/AppShell";
-  
-  function Members() {
-    const navigate =
-      useNavigate();
-  
-    const [
-      user,
-      setUser,
-    ] = useState(null);
-  
-    const [
-      groups,
-      setGroups,
-    ] = useState([]);
-  
-    const [
-      memberships,
-      setMemberships,
-    ] = useState([]);
-  
-    const [
-      selectedGroup,
-      setSelectedGroup,
-    ] = useState("all");
-  
-    const [
-      search,
-      setSearch,
-    ] = useState("");
-  
-    const [
-      loading,
-      setLoading,
-    ] = useState(true);
-  
-    const [
-      error,
-      setError,
-    ] = useState("");
-  
-    const [
-      showAddMember,
-      setShowAddMember,
-    ] = useState(false);
-  
-    const [
-      addGroupId,
-      setAddGroupId,
-    ] = useState("");
-  
-    const [
-      newUserId,
-      setNewUserId,
-    ] = useState("");
-  
-    const [
-      addingMember,
-      setAddingMember,
-    ] = useState(false);
-  
-    const [
-      message,
-      setMessage,
-    ] = useState("");
-  
-    /* =====================================================
-       LOAD DATA
-    ===================================================== */
-  
-    const loadMembers =
-      async () => {
-        try {
-          setLoading(true);
-  
-          const [
-            userResponse,
-            groupResponse,
-          ] = await Promise.all([
-            api.get(
-              "/users/me"
-            ),
-  
-            api.get(
-              "/chit-groups/"
-            ),
-          ]);
-  
-          const currentUser =
-            userResponse.data;
-  
-          const chitGroups =
-            groupResponse.data;
-  
-          setUser(
-            currentUser
-          );
-  
-          setGroups(
-            chitGroups
-          );
-  
-          /*
-            Membership endpoint returns:
-            membership_id
-            user_id
-            chit_id
-            join_date
-            status
-          */
-  
-          const requests =
-            chitGroups.map(
-              async (group) => {
-                try {
-                  const response =
-                    await api.get(
-                      `/chit-groups/${group.chit_id}/members`
-                    );
-  
-                  return response.data.map(
-                    (membership) => ({
-                      ...membership,
-  
-                      group_name:
-                        group.name,
-  
-                      group_creator:
-                        group.created_by,
-  
-                      group_capacity:
-                        group.number_of_members,
-                    })
+  ArrowRight,
+  Crown,
+  Search,
+  UserPlus,
+  Users,
+  UsersRound,
+  WalletCards,
+  X,
+} from "lucide-react";
+
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+
+import api from "@/api/api";
+
+import AppShell from "@/components/AppShell";
+
+import {
+  Badge,
+} from "@/components/ui/badge";
+
+import {
+  Button,
+} from "@/components/ui/button";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+import {
+  Input,
+} from "@/components/ui/input";
+
+import {
+  Label,
+} from "@/components/ui/label";
+
+
+/* =========================================================
+   MEMBERS
+========================================================= */
+
+function Members() {
+  const navigate =
+    useNavigate();
+
+  const [
+    user,
+    setUser,
+  ] = useState(null);
+
+  const [
+    groups,
+    setGroups,
+  ] = useState([]);
+
+  const [
+    memberships,
+    setMemberships,
+  ] = useState([]);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+  const [
+    success,
+    setSuccess,
+  ] = useState("");
+
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+
+  const [
+    addOpen,
+    setAddOpen,
+  ] = useState(false);
+
+  const [
+    selectedGroup,
+    setSelectedGroup,
+  ] = useState("");
+
+  const [
+    newUserId,
+    setNewUserId,
+  ] = useState("");
+
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
+
+
+  /* =====================================================
+     LOAD DATA
+  ===================================================== */
+
+  const loadData =
+    async () => {
+      try {
+        setLoading(true);
+
+        const [
+          userResponse,
+          groupsResponse,
+        ] = await Promise.all([
+          api.get(
+            "/users/me"
+          ),
+
+          api.get(
+            "/chit-groups/"
+          ),
+        ]);
+
+        const currentUser =
+          userResponse.data;
+
+        const currentGroups =
+          groupsResponse.data ||
+          [];
+
+        setUser(
+          currentUser
+        );
+
+        setGroups(
+          currentGroups
+        );
+
+
+        const memberRequests =
+          currentGroups.map(
+            async (group) => {
+              try {
+                const response =
+                  await api.get(
+                    `/chit-groups/${group.chit_id}/members`
                   );
-                } catch {
-                  return [];
-                }
+
+                const members =
+                  response.data ||
+                  [];
+
+                return members.map(
+                  (member) => ({
+                    ...member,
+
+                    groupId:
+                      group.chit_id,
+
+                    groupName:
+                      group.name,
+
+                    groupCapacity:
+                      Number(
+                        group.number_of_members ||
+                          0
+                      ),
+
+                    groupCreatedBy:
+                      group.created_by,
+                  })
+                );
+              } catch {
+                return [];
               }
-            );
-  
-          const results =
-            await Promise.all(
-              requests
-            );
-  
-          setMemberships(
-            results.flat()
+            }
           );
-  
-          setError("");
-        } catch (error) {
-          if (
-            error.response
-              ?.status === 401
-          ) {
-            localStorage.removeItem(
-              "token"
-            );
-  
-            navigate("/");
-          } else {
-            setError(
-              error.response
-                ?.data
-                ?.detail ||
-                "Unable to load members"
-            );
-          }
-        } finally {
-          setLoading(false);
-        }
-      };
-  
-    useEffect(() => {
-      loadMembers();
-    }, []);
-  
-    /* =====================================================
-       DERIVED DATA
-    ===================================================== */
-  
-    const uniqueMembers =
-      useMemo(() => {
-        return new Set(
-          memberships.map(
-            (member) =>
-              member.user_id
-          )
-        ).size;
-      }, [memberships]);
-  
-    const activeMemberships =
-      memberships.filter(
-        (member) =>
-          member.status ===
-          "ACTIVE"
-      ).length;
-  
-    const myManagedGroups =
-      groups.filter(
-        (group) =>
-          Number(
-            group.created_by
-          ) ===
-          Number(
-            user?.user_id
-          )
-      );
-  
-    const filteredMembers =
-      memberships.filter(
-        (member) => {
-          const matchesGroup =
-            selectedGroup ===
-              "all" ||
-            String(
-              member.chit_id
-            ) ===
-              String(
-                selectedGroup
-              );
-  
-          const query =
-            search
-              .trim()
-              .toLowerCase();
-  
-          const matchesSearch =
-            !query ||
-            String(
-              member.user_id
-            ).includes(query) ||
-            String(
-              member.membership_id
-            ).includes(query) ||
-            member.group_name
-              ?.toLowerCase()
-              .includes(query) ||
-            member.status
-              ?.toLowerCase()
-              .includes(query);
-  
-          return (
-            matchesGroup &&
-            matchesSearch
+
+
+        const results =
+          await Promise.all(
+            memberRequests
           );
-        }
-      );
-  
-    /* =====================================================
-       ADD MEMBER
-    ===================================================== */
-  
-    const handleAddMember =
-      async (e) => {
-        e.preventDefault();
-  
-        setMessage("");
-  
+
+        setMemberships(
+          results.flat()
+        );
+
+        setError("");
+      } catch (error) {
+        const status =
+          error.response?.status;
+
         if (
-          !addGroupId ||
-          !newUserId
+          status === 401 ||
+          status === 403
         ) {
-          setMessage(
-            "Select a chit group and enter a user ID."
+          localStorage.removeItem(
+            "token"
           );
-  
+
+          navigate(
+            "/login"
+          );
+
           return;
         }
-  
-        setAddingMember(
-          true
+
+        setError(
+          error.response
+            ?.data
+            ?.detail ||
+            error.message ||
+            "Unable to load members."
         );
-  
-        try {
-          await api.post(
-            `/chit-groups/${addGroupId}/members`,
-            {
-              user_id:
-                Number(
-                  newUserId
-                ),
-            }
-          );
-  
-          setMessage(
-            "Member added successfully."
-          );
-  
-          setNewUserId("");
-  
-          await loadMembers();
-        } catch (error) {
-          setMessage(
-            error.response
-              ?.data
-              ?.detail ||
-              "Unable to add member"
-          );
-        } finally {
-          setAddingMember(
-            false
-          );
-        }
-      };
-  
-    /* =====================================================
-       DATE FORMAT
-    ===================================================== */
-  
-    const formatDate =
-      (value) => {
-        if (!value) {
-          return "—";
-        }
-  
-        return new Date(
-          value
-        ).toLocaleDateString(
-          "en-IN",
-          {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          }
-        );
-      };
-  
-    if (loading) {
-      return (
-        <div className="auth-page">
-          Loading members...
-        </div>
+      } finally {
+        setLoading(false);
+      }
+    };
+
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+
+  /* =====================================================
+     MANAGED GROUPS
+  ===================================================== */
+
+  const managedGroups =
+    useMemo(
+      () =>
+        groups.filter(
+          (group) =>
+            Number(
+              group.created_by
+            ) ===
+            Number(
+              user?.user_id
+            )
+        ),
+      [
+        groups,
+        user,
+      ]
+    );
+
+
+  useEffect(() => {
+    if (
+      !selectedGroup &&
+      managedGroups.length >
+        0
+    ) {
+      setSelectedGroup(
+        String(
+          managedGroups[0]
+            .chit_id
+        )
       );
     }
-  
-    return (
-      <AppShell
-        user={user}
-        active="members"
-      >
-  
-        <style>{`
-  
-          /* =================================================
-             MEMBERS PAGE
-          ================================================= */
-  
-          .members-page-header {
-            display: flex;
-  
-            justify-content:
-              space-between;
-  
-            align-items:
-              flex-end;
-  
-            gap: 24px;
-          }
-  
-          .members-page-header
-          .page-heading {
-            margin-bottom: 0;
-          }
-  
-          .members-add-button {
-            min-height: 46px;
-  
-            padding:
-              0 18px;
-  
-            display:
-              inline-flex;
-  
-            align-items: center;
-  
-            justify-content:
-              center;
-  
-            gap: 8px;
-  
-            border: none;
-  
-            border-radius:
-              13px;
-  
-            background:
-              linear-gradient(
-                135deg,
-                #1bac82,
-                #0b795d
+  }, [
+    managedGroups,
+    selectedGroup,
+  ]);
+
+
+  /* =====================================================
+     MEMBER HELPERS
+  ===================================================== */
+
+  const getMemberId =
+    (member) =>
+      member.user_id ||
+      member.member_id ||
+      member.id ||
+      "—";
+
+
+  const getMemberName =
+    (member) =>
+      member.name ||
+      member.user_name ||
+      member.full_name ||
+      `User #${getMemberId(
+        member
+      )}`;
+
+
+  const getMemberEmail =
+    (member) =>
+      member.email ||
+      member.user_email ||
+      "";
+
+
+  const getMemberStatus =
+    (member) =>
+      String(
+        member.status ||
+        member.membership_status ||
+        "ACTIVE"
+      ).toUpperCase();
+
+
+  const isActive =
+    (member) =>
+      ![
+        "INACTIVE",
+        "REMOVED",
+        "SUSPENDED",
+      ].includes(
+        getMemberStatus(
+          member
+        )
+      );
+
+
+  /* =====================================================
+     METRICS
+  ===================================================== */
+
+  const activeMemberships =
+    useMemo(
+      () =>
+        memberships.filter(
+          isActive
+        ),
+      [memberships]
+    );
+
+
+  const totalCapacity =
+    useMemo(
+      () =>
+        groups.reduce(
+          (sum, group) =>
+            sum +
+            Number(
+              group.number_of_members ||
+                0
+            ),
+          0
+        ),
+      [groups]
+    );
+
+
+  const uniqueMembers =
+    useMemo(
+      () => {
+        const ids =
+          new Set();
+
+        memberships.forEach(
+          (member) => {
+            const id =
+              getMemberId(
+                member
               );
-  
-            color: white;
-  
-            font-size:
-              13px;
-  
-            font-weight: 700;
-  
-            cursor: pointer;
-  
-            box-shadow:
-              0 11px 25px
-              rgba(
-                17,
-                154,
-                113,
-                0.18
+
+            ids.add(
+              String(id)
+            );
+          }
+        );
+
+        return ids.size;
+      },
+      [memberships]
+    );
+
+
+  const capacityUsed =
+    totalCapacity > 0
+      ? Math.min(
+          100,
+          (
+            activeMemberships.length /
+            totalCapacity
+          ) *
+            100
+        )
+      : 0;
+
+
+  /* =====================================================
+     GROUP MEMBERSHIP DATA
+  ===================================================== */
+
+  const groupData =
+    useMemo(
+      () =>
+        groups.map(
+          (group) => {
+            const groupMembers =
+              memberships.filter(
+                (member) =>
+                  Number(
+                    member.groupId
+                  ) ===
+                  Number(
+                    group.chit_id
+                  )
               );
-  
-            transition:
-              0.2s ease;
-          }
-  
-          .members-add-button:hover {
-            transform:
-              translateY(-2px);
-          }
-  
-          /* =================================================
-             HERO
-          ================================================= */
-  
-          .members-hero {
-            position: relative;
-  
-            overflow: hidden;
-  
-            margin-top: 24px;
-  
-            min-height: 220px;
-  
-            padding: 34px;
-  
-            display: flex;
-  
-            align-items: center;
-  
-            border-radius: 30px;
-  
-            background:
-              radial-gradient(
-                circle at 83% 20%,
-                rgba(
-                  90,
-                  226,
-                  186,
-                  0.20
+
+            const activeCount =
+              groupMembers.filter(
+                isActive
+              ).length;
+
+            const capacity =
+              Number(
+                group.number_of_members ||
+                  0
+              );
+
+            const percentage =
+              capacity > 0
+                ? Math.min(
+                    100,
+                    (
+                      activeCount /
+                      capacity
+                    ) *
+                      100
+                  )
+                : 0;
+
+            return {
+              groupId:
+                group.chit_id,
+
+              name:
+                group.name,
+
+              shortName:
+                group.name?.length >
+                17
+                  ? `${group.name.slice(
+                      0,
+                      17
+                    )}…`
+                  : group.name,
+
+              members:
+                activeCount,
+
+              capacity,
+
+              percentage,
+
+              managed:
+                Number(
+                  group.created_by
+                ) ===
+                Number(
+                  user?.user_id
                 ),
-                transparent 27%
+            };
+          }
+        ),
+      [
+        groups,
+        memberships,
+        user,
+      ]
+    );
+
+
+  /* =====================================================
+     SEARCH
+  ===================================================== */
+
+  const filteredMemberships =
+    useMemo(() => {
+      const query =
+        search
+          .trim()
+          .toLowerCase();
+
+      if (!query) {
+        return memberships;
+      }
+
+      return memberships.filter(
+        (member) =>
+          getMemberName(
+            member
+          )
+            .toLowerCase()
+            .includes(
+              query
+            ) ||
+          getMemberEmail(
+            member
+          )
+            .toLowerCase()
+            .includes(
+              query
+            ) ||
+          String(
+            getMemberId(
+              member
+            )
+          ).includes(
+            query
+          ) ||
+          String(
+            member.groupName ||
+              ""
+          )
+            .toLowerCase()
+            .includes(
+              query
+            )
+      );
+    }, [
+      memberships,
+      search,
+    ]);
+
+
+  /* =====================================================
+     ADD MEMBER
+  ===================================================== */
+
+  const addMember =
+    async (
+      event
+    ) => {
+      event.preventDefault();
+
+      if (
+        !selectedGroup ||
+        !newUserId
+      ) {
+        setError(
+          "Please select a group and enter a user ID."
+        );
+
+        return;
+      }
+
+      try {
+        setSubmitting(true);
+
+        await api.post(
+          `/chit-groups/${selectedGroup}/members`,
+          {
+            user_id:
+              Number(
+                newUserId
               ),
-              linear-gradient(
-                140deg,
-                #0b3039,
-                #071e27
-              );
-  
-            color: white;
           }
-  
-          .members-hero::after {
-            content: "";
-  
-            position: absolute;
-  
-            width: 250px;
-  
-            height: 250px;
-  
-            right: -55px;
-  
-            top: -80px;
-  
-            border:
-              1px solid
-              rgba(
-                255,
-                255,
-                255,
-                0.07
-              );
-  
-            border-radius: 50%;
-          }
-  
-          .members-hero-content {
-            position: relative;
-  
-            z-index: 2;
-  
-            max-width: 650px;
-          }
-  
-          .members-eyebrow {
-            font-family:
-              var(--font-mono);
-  
-            color:
-              #69dfbb;
-  
-            font-size:
-              11px;
-  
-            font-weight: 700;
-  
-            letter-spacing:
-              0.12em;
-          }
-  
-          .members-hero h2 {
-            margin:
-              13px 0 0;
-  
-            max-width: 630px;
-  
-            color: white;
-  
-            font-size:
-              clamp(
-                31px,
-                4vw,
-                44px
-              );
-  
-            line-height: 1.06;
-  
-            letter-spacing:
-              -0.045em;
-          }
-  
-          .members-hero p {
-            margin:
-              13px 0 0;
-  
-            max-width: 570px;
-  
-            color:
-              #94afb6;
-  
-            font-size: 14px;
-  
-            line-height: 1.7;
-          }
-  
-          /* =================================================
-             STATS
-          ================================================= */
-  
-          .members-stats {
-            margin-top: 22px;
-  
-            display: grid;
-  
-            grid-template-columns:
-              repeat(
-                4,
-                minmax(
-                  0,
-                  1fr
-                )
-              );
-  
-            gap: 13px;
-          }
-  
-          .member-stat {
-            min-height: 115px;
-  
-            padding: 19px;
-  
-            display: flex;
-  
-            align-items: center;
-  
-            gap: 13px;
-  
-            border:
-              1px solid
-              var(--border);
-  
-            border-radius: 19px;
-  
-            background: white;
-  
-            box-shadow:
-              var(--shadow);
-          }
-  
-          .member-stat-icon {
-            width: 45px;
-  
-            height: 45px;
-  
-            display: grid;
-  
-            place-items: center;
-  
-            flex: 0 0 auto;
-  
-            border-radius:
-              14px;
-  
-            background:
-              var(--green-light);
-  
-            color:
-              var(--green-dark);
-          }
-  
-          .member-stat strong {
-            display: block;
-  
-            font-family:
-              var(--font-mono);
-  
-            color: #163039;
-  
-            font-size: 23px;
-          }
-  
-          .member-stat span {
-            display: block;
-  
-            margin-top: 3px;
-  
-            color:
-              var(--muted);
-  
-            font-size: 12px;
-          }
-  
-          /* =================================================
-             ADD MEMBER PANEL
-          ================================================= */
-  
-          .member-add-panel {
-            margin-top: 22px;
-  
-            padding: 24px;
-  
-            border:
-              1px solid
-              #d6e8e2;
-  
-            border-radius: 22px;
-  
-            background:
-              linear-gradient(
-                145deg,
-                #f3faf7,
-                white
-              );
-          }
-  
-          .member-add-panel h3 {
-            margin: 0;
-  
-            color: #173139;
-  
-            font-size: 18px;
-          }
-  
-          .member-add-panel > p {
-            margin:
-              6px 0 18px;
-  
-            color:
-              var(--muted);
-  
-            font-size: 13px;
-          }
-  
-          .member-add-form {
-            display: grid;
-  
-            grid-template-columns:
-              1fr
-              1fr
-              auto;
-  
-            align-items: end;
-  
-            gap: 13px;
-          }
-  
-          .member-add-form label {
-            display: flex;
-  
-            flex-direction:
-              column;
-  
-            gap: 8px;
-          }
-  
-          .member-add-form
-          label span {
-            font-family:
-              var(--font-mono);
-  
-            color: #62767d;
-  
-            font-size: 11px;
-  
-            font-weight: 700;
-          }
-  
-          .member-add-form
-          select,
-          .member-add-form
-          input {
-            width: 100%;
-  
-            height: 46px;
-  
-            padding:
-              0 12px;
-  
-            border:
-              1px solid
-              #d7e3e5;
-  
-            border-radius:
-              12px;
-  
-            background: white;
-  
-            color: #173039;
-  
-            font-size: 14px;
-  
-            outline: none;
-          }
-  
-          /* =================================================
-             MAIN CARD
-          ================================================= */
-  
-          .members-card {
-            margin-top: 22px;
-  
-            padding: 25px;
-  
-            border:
-              1px solid
-              var(--border);
-  
-            border-radius: 26px;
-  
-            background: white;
-  
-            box-shadow:
-              var(--shadow);
-          }
-  
-          .members-card-header {
-            display: flex;
-  
-            align-items:
-              center;
-  
-            justify-content:
-              space-between;
-  
-            gap: 20px;
-          }
-  
-          .members-card-title {
-            display: flex;
-  
-            align-items: center;
-  
-            gap: 12px;
-          }
-  
-          .members-card-icon {
-            width: 44px;
-  
-            height: 44px;
-  
-            display: grid;
-  
-            place-items: center;
-  
-            border-radius:
-              14px;
-  
-            background:
-              var(--green-light);
-  
-            color:
-              var(--green-dark);
-          }
-  
-          .members-card-title h2 {
-            margin: 0;
-  
-            color: #173139;
-  
-            font-size: 19px;
-          }
-  
-          .members-card-title p {
-            margin:
-              4px 0 0;
-  
-            color:
-              var(--muted);
-  
-            font-size: 13px;
-          }
-  
-          /* =================================================
-             FILTERS
-          ================================================= */
-  
-          .members-filters {
-            margin-top: 20px;
-  
-            display: grid;
-  
-            grid-template-columns:
-              minmax(
-                200px,
-                1fr
-              )
-              minmax(
-                180px,
-                250px
-              );
-  
-            gap: 12px;
-          }
-  
-          .members-search {
-            position: relative;
-          }
-  
-          .members-search svg {
-            position: absolute;
-  
-            left: 13px;
-  
-            top: 50%;
-  
-            transform:
-              translateY(-50%);
-  
-            color: #819297;
-          }
-  
-          .members-search input,
-          .members-filters select {
-            width: 100%;
-  
-            height: 45px;
-  
-            border:
-              1px solid
-              #dce5e7;
-  
-            border-radius:
-              12px;
-  
-            background:
-              #fafcfc;
-  
-            color: #173039;
-  
-            font-size: 14px;
-  
-            outline: none;
-          }
-  
-          .members-search input {
-            padding:
-              0 13px
-              0 40px;
-          }
-  
-          .members-filters select {
-            padding:
-              0 12px;
-          }
-  
-          /* =================================================
-             MEMBER LIST
-          ================================================= */
-  
-          .members-list {
-            margin-top: 19px;
-  
-            display: grid;
-  
-            gap: 11px;
-          }
-  
-          .member-row {
-            min-height: 91px;
-  
-            padding: 16px;
-  
-            display: grid;
-  
-            grid-template-columns:
-              48px
-              minmax(
-                0,
-                1.2fr
-              )
-              minmax(
-                120px,
-                0.7fr
-              )
-              minmax(
-                120px,
-                0.7fr
-              )
-              auto;
-  
-            align-items: center;
-  
-            gap: 15px;
-  
-            border:
-              1px solid
-              var(--border);
-  
-            border-radius: 17px;
-  
-            transition:
-              0.2s ease;
-          }
-  
-          .member-row:hover {
-            border-color:
-              #c9deda;
-  
-            transform:
-              translateY(-1px);
-  
-            box-shadow:
-              0 10px 26px
-              rgba(
-                16,
-                44,
-                53,
-                0.06
-              );
-          }
-  
-          .member-avatar {
-            width: 45px;
-  
-            height: 45px;
-  
-            display: grid;
-  
-            place-items: center;
-  
-            border-radius:
-              14px;
-  
-            background:
-              linear-gradient(
-                145deg,
-                #dff6ed,
-                #c6ebdf
-              );
-  
-            color:
-              var(--green-dark);
-  
-            font-family:
-              var(--font-mono);
-  
-            font-size: 14px;
-  
-            font-weight: 700;
-          }
-  
-          .member-primary {
-            min-width: 0;
-          }
-  
-          .member-primary-top {
-            display: flex;
-  
-            align-items: center;
-  
-            gap: 8px;
-  
-            flex-wrap: wrap;
-          }
-  
-          .member-primary strong {
-            color: #183039;
-  
-            font-size: 15px;
-          }
-  
-          .member-primary p {
-            margin:
-              5px 0 0;
-  
-            overflow: hidden;
-  
-            color:
-              var(--muted);
-  
-            font-size: 12px;
-  
-            text-overflow:
-              ellipsis;
-  
-            white-space: nowrap;
-          }
-  
-          .member-data-label {
-            display: block;
-  
-            font-family:
-              var(--font-mono);
-  
-            color: #849399;
-  
-            font-size: 10px;
-  
-            font-weight: 700;
-  
-            letter-spacing:
-              0.07em;
-          }
-  
-          .member-data strong {
-            display: block;
-  
-            margin-top: 5px;
-  
-            color: #52666c;
-  
-            font-size: 12px;
-          }
-  
-          .member-open-group {
-            min-height: 39px;
-  
-            padding:
-              0 13px;
-  
-            display:
-              inline-flex;
-  
-            align-items: center;
-  
-            gap: 6px;
-  
-            border:
-              1px solid
-              #cce0da;
-  
-            border-radius:
-              11px;
-  
-            background: white;
-  
-            color:
-              var(--green-dark);
-  
-            font-size: 12px;
-  
-            font-weight: 700;
-  
-            cursor: pointer;
-          }
-  
-          /* =================================================
-             EMPTY
-          ================================================= */
-  
-          .members-empty {
-            margin-top: 18px;
-  
-            padding:
-              45px 20px;
-  
-            text-align: center;
-  
-            border:
-              1px dashed
-              #d4e1e3;
-  
-            border-radius:
-              18px;
-  
-            background:
-              #fbfcfc;
-          }
-  
-          .members-empty strong {
-            display: block;
-  
-            color: #183039;
-  
-            font-size: 15px;
-          }
-  
-          .members-empty p {
-            margin:
-              7px 0 0;
-  
-            color:
-              var(--muted);
-  
-            font-size: 13px;
-          }
-  
-          /* =================================================
-             NOTE
-          ================================================= */
-  
-          .members-note {
-            margin-top: 20px;
-  
-            padding: 16px;
-  
-            display: flex;
-  
-            align-items:
-              flex-start;
-  
-            gap: 11px;
-  
-            border:
-              1px solid
-              #d8e8e3;
-  
-            border-radius:
-              15px;
-  
-            background:
-              #f6fbf9;
-          }
-  
-          .members-note svg {
-            flex: 0 0 auto;
-  
-            color:
-              var(--green-dark);
-          }
-  
-          .members-note strong {
-            display: block;
-  
-            color: #284a44;
-  
-            font-size: 13px;
-          }
-  
-          .members-note p {
-            margin:
-              4px 0 0;
-  
-            color: #758d88;
-  
-            font-size: 12px;
-          }
-  
-          /* =================================================
-             RESPONSIVE
-          ================================================= */
-  
-          @media (
-            max-width: 1000px
-          ) {
-            .members-stats {
-              grid-template-columns:
-                repeat(
-                  2,
-                  1fr
-                );
-            }
-  
-            .member-row {
-              grid-template-columns:
-                48px
-                1fr
-                1fr;
-            }
-  
-            .member-row
-            .member-data:nth-of-type(2) {
-              display: none;
-            }
-  
-            .member-open-group {
-              grid-column:
-                2 / -1;
-  
-              width: fit-content;
-            }
-          }
-  
-          @media (
-            max-width: 720px
-          ) {
-            .members-page-header {
-              align-items:
-                flex-start;
-  
-              flex-direction:
-                column;
-            }
-  
-            .members-add-button {
-              width: 100%;
-            }
-  
-            .member-add-form,
-            .members-filters {
-              grid-template-columns:
-                1fr;
-            }
-  
-            .member-row {
-              grid-template-columns:
-                48px
-                1fr;
-            }
-  
-            .member-data {
-              grid-column:
-                2;
-            }
-  
-            .member-open-group {
-              grid-column:
-                1 / -1;
-  
-              width: 100%;
-  
-              justify-content:
-                center;
-            }
-          }
-  
-          @media (
-            max-width: 520px
-          ) {
-            .members-stats {
-              grid-template-columns:
-                1fr;
-            }
-  
-            .members-hero,
-            .members-card {
-              padding: 20px;
-            }
-          }
-  
-        `}</style>
-  
-        <main className="page-content">
-  
-          {/* =================================================
-              HEADING
-          ================================================= */}
-  
-          <div className="members-page-header">
-  
-            <div className="page-heading">
-  
-              <small>
-                PEOPLE & MEMBERSHIPS
-              </small>
-  
-              <h1>
-                Members
-              </h1>
-  
-              <p>
-                View membership
-                activity across your
-                ChitFlow groups.
-              </p>
-  
+        );
+
+        setNewUserId("");
+
+        setSuccess(
+          "Member added successfully."
+        );
+
+        setError("");
+
+        setAddOpen(
+          false
+        );
+
+        await loadData();
+      } catch (error) {
+        setError(
+          error.response
+            ?.data
+            ?.detail ||
+            "Unable to add member."
+        );
+      } finally {
+        setSubmitting(false);
+      }
+    };
+
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f4f5f7] text-[16px] text-black/50">
+        Loading Members...
+      </div>
+    );
+  }
+
+
+  return (
+    <AppShell
+      user={user}
+      active="members"
+    >
+
+      <main className="space-y-5">
+
+        {/* =================================================
+            PAGE HEADER
+        ================================================= */}
+
+        <section className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+
+          <div>
+
+            <div className="text-[12px] font-semibold uppercase tracking-[0.13em] text-blue-600">
+              Membership control
             </div>
-  
-            {myManagedGroups.length >
-              0 && (
-  
-              <button
+
+            <h1 className="mt-2 text-[36px] font-semibold tracking-[-0.055em] text-[#111318] md:text-[44px]">
+              Members
+            </h1>
+
+            <p className="mt-3 max-w-[680px] text-[15px] leading-7 text-black/50">
+              Understand membership
+              distribution, group capacity
+              and the users participating
+              across your chit portfolio.
+            </p>
+
+          </div>
+
+
+          <Button
+            type="button"
+            data-tour="add-member"
+            disabled={
+              managedGroups.length ===
+              0
+            }
+            onClick={() =>
+              setAddOpen(
+                true
+              )
+            }
+            className="h-12 rounded-full bg-[#111318] px-6 !text-white hover:bg-[#25282e]"
+          >
+
+            <UserPlus
+              size={17}
+            />
+
+            Add Member
+
+          </Button>
+
+        </section>
+
+
+        {/* =================================================
+            MESSAGES
+        ================================================= */}
+
+        {error && (
+
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-[14px] text-red-700">
+            {error}
+          </div>
+
+        )}
+
+
+        {success && (
+
+          <div className="rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-[14px] text-green-700">
+            {success}
+          </div>
+
+        )}
+
+
+        {/* =================================================
+            KPI CARDS
+        ================================================= */}
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+          <MetricCard
+            icon={
+              Users
+            }
+            label="Unique members"
+            value={
+              uniqueMembers
+            }
+            description="Distinct users across accessible groups"
+          />
+
+          <MetricCard
+            icon={
+              UsersRound
+            }
+            label="Memberships"
+            value={
+              activeMemberships.length
+            }
+            description="Active group memberships"
+          />
+
+          <MetricCard
+            icon={Crown}
+            label="Managed groups"
+            value={
+              managedGroups.length
+            }
+            description="Groups where you can add members"
+          />
+
+          <MetricCard
+            icon={
+              WalletCards
+            }
+            label="Member capacity"
+            value={
+              totalCapacity
+            }
+            description="Configured places across all groups"
+          />
+
+        </section>
+
+
+        {/* =================================================
+            ANALYTICS
+        ================================================= */}
+
+        <section className="grid gap-5 xl:grid-cols-[1.35fr_.65fr]">
+
+          {/* MEMBERS VS CAPACITY */}
+
+          <Card className="rounded-[26px] border-black/[0.07] shadow-none">
+
+            <CardHeader className="px-6 pt-6 md:px-7">
+
+              <div className="text-[12px] font-semibold uppercase tracking-[0.11em] text-blue-600">
+                Membership distribution
+              </div>
+
+              <CardTitle className="mt-2 text-[23px] font-semibold tracking-[-0.04em]">
+                Members vs group capacity
+              </CardTitle>
+
+              <CardDescription className="mt-2 text-[14px] leading-6">
+                Compare current active
+                memberships with each
+                group&apos;s configured
+                member capacity.
+              </CardDescription>
+
+            </CardHeader>
+
+
+            <CardContent className="px-4 pb-6 md:px-6">
+
+              {groupData.length ===
+              0 ? (
+
+                <EmptyState
+                  title="No group data"
+                  description="Membership analytics will appear when you have accessible chit groups."
+                />
+
+              ) : (
+
+                <div
+                  style={{
+                    height:
+                      Math.max(
+                        300,
+                        groupData.length *
+                          62
+                      ),
+                  }}
+                >
+
+                  <ResponsiveContainer
+                    width="100%"
+                    height="100%"
+                  >
+
+                    <BarChart
+                      data={
+                        groupData
+                      }
+                      layout="vertical"
+                      margin={{
+                        top: 10,
+                        right: 30,
+                        left: 5,
+                        bottom: 10,
+                      }}
+                    >
+
+                      <CartesianGrid
+                        stroke="#e8eaee"
+                        strokeDasharray="4 4"
+                        horizontal={false}
+                      />
+
+                      <XAxis
+                        type="number"
+                        allowDecimals={false}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill:
+                            "#71717a",
+                          fontSize:
+                            12,
+                        }}
+                      />
+
+                      <YAxis
+                        type="category"
+                        dataKey="shortName"
+                        width={125}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill:
+                            "#3f3f46",
+                          fontSize:
+                            12,
+                        }}
+                      />
+
+                      <Tooltip
+                        content={
+                          <MembershipTooltip />
+                        }
+                      />
+
+                      <Bar
+                        dataKey="capacity"
+                        name="Capacity"
+                        fill="#d9dee7"
+                        radius={[
+                          0,
+                          7,
+                          7,
+                          0,
+                        ]}
+                        maxBarSize={28}
+                      />
+
+                      <Bar
+                        dataKey="members"
+                        name="Members"
+                        fill="#2563eb"
+                        radius={[
+                          0,
+                          7,
+                          7,
+                          0,
+                        ]}
+                        maxBarSize={28}
+                      />
+
+                    </BarChart>
+
+                  </ResponsiveContainer>
+
+                </div>
+
+              )}
+
+            </CardContent>
+
+          </Card>
+
+
+          {/* CAPACITY GAUGE */}
+
+          <Card className="rounded-[26px] border-black/[0.07] bg-[#111318] text-white shadow-none">
+
+            <CardHeader className="px-6 pt-6">
+
+              <div className="text-[11px] font-semibold uppercase tracking-[0.13em] text-blue-300">
+                Portfolio capacity
+              </div>
+
+              <CardTitle className="mt-2 !text-white text-[23px] font-semibold tracking-[-0.04em]">
+                Membership utilization
+              </CardTitle>
+
+              <CardDescription className="!text-white/45 text-[13px] leading-6">
+                Active memberships compared
+                with configured capacity.
+              </CardDescription>
+
+            </CardHeader>
+
+
+            <CardContent className="px-6 pb-6">
+
+              <div className="flex justify-center py-3">
+
+                <CapacityGauge
+                  percentage={
+                    capacityUsed
+                  }
+                  members={
+                    activeMemberships.length
+                  }
+                  capacity={
+                    totalCapacity
+                  }
+                />
+
+              </div>
+
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+
+                <DarkMetric
+                  label="Active memberships"
+                  value={
+                    activeMemberships.length
+                  }
+                />
+
+                <DarkMetric
+                  label="Available capacity"
+                  value={
+                    Math.max(
+                      0,
+                      totalCapacity -
+                        activeMemberships.length
+                    )
+                  }
+                />
+
+                <DarkMetric
+                  label="Accessible groups"
+                  value={
+                    groups.length
+                  }
+                />
+
+                <DarkMetric
+                  label="Managed groups"
+                  value={
+                    managedGroups.length
+                  }
+                />
+
+              </div>
+
+            </CardContent>
+
+          </Card>
+
+        </section>
+
+
+        {/* =================================================
+            ADD MEMBER FORM
+        ================================================= */}
+
+        {addOpen && (
+
+          <Card
+            data-tour="member-form"
+            className="rounded-[26px] border-blue-200 bg-blue-50/30 shadow-none"
+          >
+
+            <CardHeader className="flex flex-row items-start justify-between gap-5 space-y-0 px-6 pt-6 md:px-7">
+
+              <div>
+
+                <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+                  Add Member
+                </CardTitle>
+
+                <CardDescription className="mt-2 max-w-[650px] text-[14px] leading-6">
+                  Add an existing registered
+                  ChitFlow user to one of
+                  the chit groups you
+                  manage.
+                </CardDescription>
+
+              </div>
+
+
+              <Button
                 type="button"
-                className="members-add-button"
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
                 onClick={() =>
-                  setShowAddMember(
-                    !showAddMember
+                  setAddOpen(
+                    false
                   )
                 }
               >
-  
-                <UserPlus
-                  size={16}
+
+                <X
+                  size={18}
                 />
-  
-                Add Member
-  
-              </button>
-  
-            )}
-  
-          </div>
-  
-          {error && (
-            <div className="app-message error">
-              {error}
-            </div>
-          )}
-  
-          {/* =================================================
-              HERO
-          ================================================= */}
-  
-          <section className="members-hero">
-  
-            <div className="members-hero-content">
-  
-              <span className="members-eyebrow">
-                CHITFLOW COMMUNITY
-              </span>
-  
-              <h2>
-                Every chit starts
-                with people you
-                can account for.
-              </h2>
-  
-              <p>
-                Memberships connect
-                registered users to
-                chit groups and define
-                who can participate
-                in contributions,
-                bidding and the
-                round lifecycle.
-              </p>
-  
-            </div>
-  
-          </section>
-  
-          {/* =================================================
-              STATS
-          ================================================= */}
-  
-          <div className="members-stats">
-  
-            <div className="member-stat">
-  
-              <div className="member-stat-icon">
-  
-                <Users
-                  size={21}
-                />
-  
-              </div>
-  
-              <div>
-  
-                <strong>
-                  {uniqueMembers}
-                </strong>
-  
-                <span>
-                  Unique members
-                </span>
-  
-              </div>
-  
-            </div>
-  
-            <div className="member-stat">
-  
-              <div className="member-stat-icon">
-  
-                <CheckCircle2
-                  size={21}
-                />
-  
-              </div>
-  
-              <div>
-  
-                <strong>
-                  {activeMemberships}
-                </strong>
-  
-                <span>
-                  Active memberships
-                </span>
-  
-              </div>
-  
-            </div>
-  
-            <div className="member-stat">
-  
-              <div className="member-stat-icon">
-  
-                <WalletCards
-                  size={21}
-                />
-  
-              </div>
-  
-              <div>
-  
-                <strong>
-                  {groups.length}
-                </strong>
-  
-                <span>
-                  Chit groups
-                </span>
-  
-              </div>
-  
-            </div>
-  
-            <div className="member-stat">
-  
-              <div className="member-stat-icon">
-  
-                <Crown
-                  size={21}
-                />
-  
-              </div>
-  
-              <div>
-  
-                <strong>
-                  {
-                    myManagedGroups.length
-                  }
-                </strong>
-  
-                <span>
-                  Groups managed by you
-                </span>
-  
-              </div>
-  
-            </div>
-  
-          </div>
-  
-          {/* =================================================
-              ADD MEMBER
-          ================================================= */}
-  
-          {showAddMember && (
-  
-            <section className="member-add-panel">
-  
-              <h3>
-                Add an existing
-                ChitFlow user
-              </h3>
-  
-              <p>
-                Only a chit group
-                creator can add
-                members. Enter the
-                registered user's ID.
-              </p>
-  
+
+              </Button>
+
+            </CardHeader>
+
+
+            <CardContent className="px-6 pb-6 md:px-7">
+
               <form
-                className="member-add-form"
                 onSubmit={
-                  handleAddMember
+                  addMember
                 }
+                className="grid gap-5 lg:grid-cols-[1fr_1fr_auto] lg:items-end"
               >
-  
-                <label>
-  
-                  <span>
-                    CHIT GROUP
-                  </span>
-  
+
+                <div className="space-y-2">
+
+                  <Label
+                    htmlFor="memberGroup"
+                    className="text-[13px]"
+                  >
+                    Chit group
+                  </Label>
+
                   <select
+                    id="memberGroup"
+                    data-tour="member-group"
                     value={
-                      addGroupId
+                      selectedGroup
                     }
-                    onChange={(e) =>
-                      setAddGroupId(
-                        e.target.value
+                    onChange={(event) =>
+                      setSelectedGroup(
+                        event.target.value
                       )
                     }
-                    required
+                    className="h-12 w-full rounded-xl border border-input bg-white px-3 text-[14px] outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/[0.06]"
                   >
-  
-                    <option value="">
-                      Select a group
-                    </option>
-  
-                    {myManagedGroups.map(
+
+                    {managedGroups.map(
                       (group) => (
-  
+
                         <option
                           key={
                             group.chit_id
@@ -1542,348 +1077,729 @@ import {
                             group.name
                           }
                         </option>
-  
+
                       )
                     )}
-  
+
                   </select>
-  
-                </label>
-  
-                <label>
-  
-                  <span>
-                    REGISTERED USER ID
-                  </span>
-  
-                  <input
+
+                </div>
+
+
+                <div className="space-y-2">
+
+                  <Label
+                    htmlFor="memberUserId"
+                    className="text-[13px]"
+                  >
+                    Registered User ID
+                  </Label>
+
+                  <Input
+                    id="memberUserId"
+                    data-tour="member-user-id"
                     type="number"
                     min="1"
                     value={
                       newUserId
                     }
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setNewUserId(
-                        e.target.value
+                        event.target.value
                       )
                     }
-                    placeholder="Example: 3"
-                    required
+                    placeholder="Enter user ID"
+                    className="h-12 rounded-xl bg-white"
                   />
-  
-                </label>
-  
-                <button
+
+                </div>
+
+
+                <Button
                   type="submit"
-                  className="primary-button"
+                  data-tour="submit-member"
                   disabled={
-                    addingMember
+                    submitting ||
+                    !selectedGroup ||
+                    !newUserId
                   }
+                  className="h-12 rounded-full bg-[#111318] px-6 !text-white hover:bg-[#25282e]"
                 >
-                  {addingMember
+
+                  {submitting
                     ? "Adding..."
                     : "Add Member"}
-                </button>
-  
+
+                  {!submitting && (
+
+                    <ArrowRight
+                      size={16}
+                    />
+
+                  )}
+
+                </Button>
+
               </form>
-  
-              {message && (
-                <div className="app-message">
-                  {message}
-                </div>
-              )}
-  
-            </section>
-  
-          )}
-  
-          {/* =================================================
-              MEMBER DIRECTORY
-          ================================================= */}
-  
-          <section className="members-card">
-  
-            <div className="members-card-header">
-  
-              <div className="members-card-title">
-  
-                <div className="members-card-icon">
-  
-                  <Users
-                    size={21}
-                  />
-  
-                </div>
-  
-                <div>
-  
-                  <h2>
-                    Member directory
-                  </h2>
-  
-                  <p>
-                    Memberships across
-                    your accessible chit
-                    groups.
-                  </p>
-  
-                </div>
-  
-              </div>
-  
-            </div>
-  
-            {/* FILTER */}
-  
-            <div className="members-filters">
-  
-              <div className="members-search">
-  
-                <Search
-                  size={17}
+
+            </CardContent>
+
+          </Card>
+
+        )}
+
+
+        {/* =================================================
+            GROUP CAPACITY CARDS
+        ================================================= */}
+
+        <Card className="rounded-[26px] border-black/[0.07] shadow-none">
+
+          <CardHeader className="px-6 pt-6 md:px-7">
+
+            <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+              Group membership
+            </CardTitle>
+
+            <CardDescription className="mt-2 text-[14px]">
+              See how each chit group is
+              filling its configured member
+              capacity.
+            </CardDescription>
+
+          </CardHeader>
+
+
+          <CardContent className="grid gap-4 px-6 pb-6 md:grid-cols-2 md:px-7 xl:grid-cols-3">
+
+            {groupData.length ===
+            0 ? (
+
+              <div className="md:col-span-2 xl:col-span-3">
+
+                <EmptyState
+                  title="No groups"
+                  description="Your chit groups will appear here."
                 />
-  
+
+              </div>
+
+            ) : (
+
+              groupData.map(
+                (group) => (
+
+                  <button
+                    key={
+                      group.groupId
+                    }
+                    type="button"
+                    onClick={() =>
+                      navigate(
+                        `/chits/${group.groupId}`
+                      )
+                    }
+                    className="group rounded-[20px] border border-black/[0.07] bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_12px_30px_rgba(15,23,42,0.06)]"
+                  >
+
+                    <div className="flex items-start justify-between gap-3">
+
+                      <div className="flex items-center gap-3">
+
+                        <span className="flex size-11 items-center justify-center rounded-xl bg-[#f1f3f6]">
+
+                          <UsersRound
+                            size={18}
+                          />
+
+                        </span>
+
+                        <div>
+
+                          <div className="text-[15px] font-semibold">
+                            {
+                              group.name
+                            }
+                          </div>
+
+                          <div className="mt-1 text-[11px] text-black/40">
+                            Chit #
+                            {
+                              group.groupId
+                            }
+                          </div>
+
+                        </div>
+
+                      </div>
+
+
+                      <Badge
+                        variant={
+                          group.managed
+                            ? "default"
+                            : "secondary"
+                        }
+                        className="rounded-full px-2.5 py-1 text-[10px]"
+                      >
+                        {group.managed
+                          ? "Manager"
+                          : "Member"}
+                      </Badge>
+
+                    </div>
+
+
+                    <div className="mt-6 flex items-end justify-between gap-4">
+
+                      <div>
+
+                        <div className="text-[12px] text-black/40">
+                          Active members
+                        </div>
+
+                        <div className="mt-1 text-[25px] font-semibold tracking-[-0.04em]">
+                          {
+                            group.members
+                          }
+                          <span className="ml-1 text-[13px] font-medium text-black/35">
+                            /{" "}
+                            {
+                              group.capacity
+                            }
+                          </span>
+                        </div>
+
+                      </div>
+
+
+                      <div className="text-[13px] font-semibold text-blue-600">
+                        {
+                          Math.round(
+                            group.percentage
+                          )
+                        }
+                        %
+                      </div>
+
+                    </div>
+
+
+                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#edf0f3]">
+
+                      <div
+                        className="h-full rounded-full bg-blue-600 transition-all"
+                        style={{
+                          width:
+                            `${group.percentage}%`,
+                        }}
+                      />
+
+                    </div>
+
+
+                    <div className="mt-4 flex items-center justify-between border-t border-black/[0.06] pt-4">
+
+                      <span className="text-[11px] text-black/40">
+                        Open group
+                      </span>
+
+                      <ArrowRight
+                        size={15}
+                        className="text-black/30 transition group-hover:translate-x-1 group-hover:text-blue-600"
+                      />
+
+                    </div>
+
+                  </button>
+
+                )
+              )
+
+            )}
+
+          </CardContent>
+
+        </Card>
+
+
+        {/* =================================================
+            MEMBER DIRECTORY
+        ================================================= */}
+
+        <Card className="overflow-hidden rounded-[26px] border-black/[0.07] shadow-none">
+
+          <CardHeader className="px-6 pt-6 md:px-7">
+
+            <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+
+              <div>
+
+                <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+                  Membership directory
+                </CardTitle>
+
+                <CardDescription className="mt-2 text-[14px]">
+                  Members and the groups
+                  they belong to.
+                </CardDescription>
+
+              </div>
+
+
+              <div className="flex h-11 w-full items-center gap-2 rounded-full border border-black/[0.08] bg-[#fafafa] px-4 lg:w-[320px]">
+
+                <Search
+                  size={16}
+                  className="text-black/35"
+                />
+
                 <input
-                  value={search}
-                  onChange={(e) =>
+                  value={
+                    search
+                  }
+                  onChange={(event) =>
                     setSearch(
-                      e.target.value
+                      event.target.value
                     )
                   }
-                  placeholder="Search member ID or group..."
+                  placeholder="Search members..."
+                  className="w-full bg-transparent text-[14px] outline-none placeholder:text-black/35"
                 />
-  
+
               </div>
-  
-              <select
-                value={
-                  selectedGroup
-                }
-                onChange={(e) =>
-                  setSelectedGroup(
-                    e.target.value
-                  )
-                }
-              >
-  
-                <option value="all">
-                  All chit groups
-                </option>
-  
-                {groups.map(
-                  (group) => (
-  
-                    <option
-                      key={
-                        group.chit_id
-                      }
-                      value={
-                        group.chit_id
-                      }
-                    >
-                      {group.name}
-                    </option>
-  
-                  )
-                )}
-  
-              </select>
-  
+
             </div>
-  
-            {/* LIST */}
-  
-            {filteredMembers.length ===
-            0 ? (
-  
-              <div className="members-empty">
-  
-                <strong>
-                  No members found
-                </strong>
-  
-                <p>
-                  Memberships will
-                  appear here when
-                  registered users are
-                  added to your chit
-                  groups.
-                </p>
-  
-              </div>
-  
-            ) : (
-  
-              <div className="members-list">
-  
-                {filteredMembers.map(
-                  (member) => {
-  
-                    const creator =
-                      Number(
-                        member.user_id
-                      ) ===
-                      Number(
-                        member.group_creator
-                      );
-  
-                    return (
-                      <article
-                        key={`${member.chit_id}-${member.membership_id}`}
-                        className="member-row"
-                      >
-  
-                        <div className="member-avatar">
-  
-                          {member.user_id}
-  
-                        </div>
-  
-                        <div className="member-primary">
-  
-                          <div className="member-primary-top">
-  
-                            <strong>
-                              Member #
-                              {
-                                member.user_id
-                              }
-                            </strong>
-  
-                            {creator && (
-  
-                              <span className="state-badge purple">
-  
-                                CREATOR
-  
-                              </span>
-  
-                            )}
-  
-                            <span
-                              className={`state-badge ${
-                                member.status ===
-                                "ACTIVE"
-                                  ? "green"
-                                  : "yellow"
-                              }`}
-                            >
-                              {
-                                member.status
-                              }
-                            </span>
-  
-                          </div>
-  
-                          <p>
-                            {
-                              member.group_name
-                            }
-                          </p>
-  
-                        </div>
-  
-                        <div className="member-data">
-  
-                          <span className="member-data-label">
-                            JOINED
-                          </span>
-  
-                          <strong>
-                            <CalendarDays
-                              size={12}
-                              style={{
-                                marginRight:
-                                  "5px",
-                                verticalAlign:
-                                  "middle",
-                              }}
-                            />
-  
-                            {formatDate(
-                              member.join_date
-                            )}
-                          </strong>
-  
-                        </div>
-  
-                        <div className="member-data">
-  
-                          <span className="member-data-label">
-                            MEMBERSHIP ID
-                          </span>
-  
-                          <strong
-                            style={{
-                              fontFamily:
-                                "var(--font-mono)",
-                            }}
-                          >
+
+          </CardHeader>
+
+
+          {filteredMemberships.length ===
+          0 ? (
+
+            <CardContent className="px-6 pb-6 md:px-7">
+
+              <EmptyState
+                title="No memberships found"
+                description={
+                  search
+                    ? "Try another member, ID or group name."
+                    : "Members will appear here when users join your accessible groups."
+                }
+              />
+
+            </CardContent>
+
+          ) : (
+
+            <div className="overflow-x-auto">
+
+              <table className="w-full border-collapse">
+
+                <thead>
+
+                  <tr className="border-y border-black/[0.06] bg-[#fafafa]">
+
+                    <th className="px-6 py-4 text-left text-[12px] font-medium text-black/45">
+                      Member
+                    </th>
+
+                    <th className="px-6 py-4 text-left text-[12px] font-medium text-black/45">
+                      User ID
+                    </th>
+
+                    <th className="px-6 py-4 text-left text-[12px] font-medium text-black/45">
+                      Chit Group
+                    </th>
+
+                    <th className="px-6 py-4 text-left text-[12px] font-medium text-black/45">
+                      Status
+                    </th>
+
+                    <th className="px-6 py-4" />
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                  {filteredMemberships.map(
+                    (
+                      member,
+                      index
+                    ) => {
+
+                      const active =
+                        isActive(
+                          member
+                        );
+
+                      return (
+                        <tr
+                          key={
+                            `${member.groupId}-${getMemberId(
+                              member
+                            )}-${index}`
+                          }
+                          className="border-b border-black/[0.06] transition hover:bg-[#fafcff]"
+                        >
+
+                          <td className="px-6 py-5">
+
+                            <div className="flex items-center gap-3">
+
+                              <MemberAvatar
+                                name={
+                                  getMemberName(
+                                    member
+                                  )
+                                }
+                              />
+
+                              <div>
+
+                                <div className="text-[14px] font-semibold">
+                                  {
+                                    getMemberName(
+                                      member
+                                    )
+                                  }
+                                </div>
+
+                                {getMemberEmail(
+                                  member
+                                ) && (
+
+                                  <div className="mt-1 text-[11px] text-black/40">
+                                    {
+                                      getMemberEmail(
+                                        member
+                                      )
+                                    }
+                                  </div>
+
+                                )}
+
+                              </div>
+
+                            </div>
+
+                          </td>
+
+
+                          <td className="px-6 py-5 text-[13px] font-medium text-black/60">
                             #
                             {
-                              member.membership_id
+                              getMemberId(
+                                member
+                              )
                             }
-                          </strong>
-  
-                        </div>
-  
-                        <button
-                          type="button"
-                          className="member-open-group"
-                          onClick={() =>
-                            navigate(
-                              `/chits/${member.chit_id}`
-                            )
-                          }
-                        >
-  
-                          Open group
-  
-                          <ArrowRight
-                            size={13}
-                          />
-  
-                        </button>
-  
-                      </article>
-                    );
-                  }
-                )}
-  
-              </div>
-  
-            )}
-  
-            <div className="members-note">
-  
-              <ShieldCheck
-                size={20}
-              />
-  
-              <div>
-  
-                <strong>
-                  Membership controlled by
-                  chit groups
-                </strong>
-  
-                <p>
-                  ChitFlow only exposes
-                  memberships for groups
-                  that the signed-in user
-                  belongs to.
-                </p>
-  
-              </div>
-  
+                          </td>
+
+
+                          <td className="px-6 py-5">
+
+                            <div className="text-[13px] font-medium">
+                              {
+                                member.groupName
+                              }
+                            </div>
+
+                            <div className="mt-1 text-[11px] text-black/35">
+                              Chit #
+                              {
+                                member.groupId
+                              }
+                            </div>
+
+                          </td>
+
+
+                          <td className="px-6 py-5">
+
+                            <Badge
+                              variant="secondary"
+                              className={
+                                active
+                                  ? "rounded-full bg-green-50 px-3 py-1.5 text-[11px] text-green-700"
+                                  : "rounded-full bg-gray-100 px-3 py-1.5 text-[11px] text-gray-600"
+                              }
+                            >
+                              {
+                                getMemberStatus(
+                                  member
+                                )
+                              }
+                            </Badge>
+
+                          </td>
+
+
+                          <td className="px-6 py-5 text-right">
+
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="rounded-full"
+                              onClick={() =>
+                                navigate(
+                                  `/chits/${member.groupId}`
+                                )
+                              }
+                            >
+
+                              <ArrowRight
+                                size={16}
+                              />
+
+                            </Button>
+
+                          </td>
+
+                        </tr>
+                      );
+                    }
+                  )}
+
+                </tbody>
+
+              </table>
+
             </div>
-  
-          </section>
-  
-        </main>
-  
-      </AppShell>
+
+          )}
+
+        </Card>
+
+      </main>
+
+    </AppShell>
+  );
+}
+
+
+/* =========================================================
+   UI COMPONENTS
+========================================================= */
+
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  description,
+}) {
+  return (
+    <Card className="rounded-[22px] border-black/[0.07] shadow-none">
+
+      <CardContent className="p-5">
+
+        <div className="flex size-11 items-center justify-center rounded-xl bg-[#f1f3f6]">
+
+          <Icon
+            size={19}
+          />
+
+        </div>
+
+        <div className="mt-6 text-[13px] text-black/45">
+          {label}
+        </div>
+
+        <div className="mt-1 text-[29px] font-semibold tracking-[-0.05em]">
+          {value}
+        </div>
+
+        <div className="mt-2 text-[12px] leading-5 text-black/40">
+          {description}
+        </div>
+
+      </CardContent>
+
+    </Card>
+  );
+}
+
+
+function DarkMetric({
+  label,
+  value,
+}) {
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.05] p-4">
+
+      <div className="text-[11px] !text-white/40">
+        {label}
+      </div>
+
+      <div className="mt-2 text-[20px] font-semibold tracking-[-0.035em] !text-white">
+        {value}
+      </div>
+
+    </div>
+  );
+}
+
+
+function CapacityGauge({
+  percentage,
+  members,
+  capacity,
+}) {
+  const degree =
+    Math.round(
+      percentage * 3.6
     );
+
+  return (
+    <div
+      className="relative flex size-[190px] items-center justify-center rounded-full"
+      style={{
+        background:
+          `conic-gradient(
+            #3b82f6 0deg,
+            #3b82f6 ${degree}deg,
+            rgba(255,255,255,0.08) ${degree}deg,
+            rgba(255,255,255,0.08) 360deg
+          )`,
+      }}
+    >
+
+      <div className="flex size-[148px] flex-col items-center justify-center rounded-full bg-[#111318]">
+
+        <div className="text-[35px] font-semibold tracking-[-0.055em] !text-white">
+          {Math.round(
+            percentage
+          )}
+          %
+        </div>
+
+        <div className="mt-1 text-[11px] !text-white/40">
+          capacity used
+        </div>
+
+        <div className="mt-3 text-[12px] font-medium !text-white/65">
+          {members} /{" "}
+          {capacity}
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
+
+function MembershipTooltip({
+  active,
+  payload,
+}) {
+  if (
+    !active ||
+    !payload?.length
+  ) {
+    return null;
   }
-  
-  export default Members;
+
+  const item =
+    payload[0]
+      ?.payload;
+
+  return (
+    <div className="rounded-xl border border-black/[0.08] bg-white px-4 py-3 shadow-xl">
+
+      <div className="text-[13px] font-semibold">
+        {item?.name}
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-4">
+
+        <div>
+
+          <div className="text-[11px] text-black/40">
+            Members
+          </div>
+
+          <div className="mt-1 text-[15px] font-semibold text-blue-600">
+            {
+              item?.members ||
+              0
+            }
+          </div>
+
+        </div>
+
+        <div>
+
+          <div className="text-[11px] text-black/40">
+            Capacity
+          </div>
+
+          <div className="mt-1 text-[15px] font-semibold">
+            {
+              item?.capacity ||
+              0
+            }
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
+
+function MemberAvatar({
+  name,
+}) {
+  const initials =
+    String(
+      name || "Member"
+    )
+      .split(" ")
+      .filter(Boolean)
+      .slice(
+        0,
+        2
+      )
+      .map(
+        (part) =>
+          part[0]
+            ?.toUpperCase()
+      )
+      .join("");
+
+  return (
+    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#111318] text-[11px] font-semibold !text-white">
+      {initials ||
+        "M"}
+    </div>
+  );
+}
+
+
+function EmptyState({
+  title,
+  description,
+}) {
+  return (
+    <div className="rounded-2xl border border-dashed border-black/10 bg-[#fafafa] px-6 py-10 text-center">
+
+      <div className="text-[16px] font-semibold">
+        {title}
+      </div>
+
+      <p className="mx-auto mt-2 max-w-[440px] text-[14px] leading-6 text-black/45">
+        {description}
+      </p>
+
+    </div>
+  );
+}
+
+
+export default Members;

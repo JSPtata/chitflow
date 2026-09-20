@@ -1,115 +1,175 @@
 import {
-    ArrowRight,
-    BadgeCheck,
-    CircleDollarSign,
-    Coins,
-    Gavel,
-    PiggyBank,
-    Plus,
-    ShieldCheck,
-    Trophy,
-    UserPlus,
-    Users,
-    WalletCards,
-    X,
-  } from "lucide-react";
-  
-  import {
-    useEffect,
-    useMemo,
-    useState,
-  } from "react";
-  
-  import {
-    useNavigate,
-  } from "react-router-dom";
-  
-  import api from "../api/api";
-  import AppShell from "../components/AppShell";
-  
-  function Dashboard() {
-    const navigate =
-      useNavigate();
-  
-    const [user, setUser] =
-      useState(null);
-  
-    const [groups, setGroups] =
-      useState([]);
-  
-    const [loading, setLoading] =
-      useState(true);
-  
-    const [error, setError] =
-      useState("");
-  
-    /* =====================================================
-       CREATE GROUP
-    ===================================================== */
-  
-    const [
-      showCreateGroup,
-      setShowCreateGroup,
-    ] = useState(false);
-  
-    const [
-      groupName,
-      setGroupName,
-    ] = useState("");
-  
-    const [
-      contributionAmount,
-      setContributionAmount,
-    ] = useState("");
-  
-    const [
-      memberCount,
-      setMemberCount,
-    ] = useState("");
-  
-    const [
-      duration,
-      setDuration,
-    ] = useState("");
-  
-    const [
-      createLoading,
-      setCreateLoading,
-    ] = useState(false);
-  
-    const [
-      createMessage,
-      setCreateMessage,
-    ] = useState("");
-  
-    /* =====================================================
-       LOAD DASHBOARD
-    ===================================================== */
-  
+  Activity,
+  ArrowRight,
+  CircleDollarSign,
+  Crown,
+  Gavel,
+  IndianRupee,
+  ShieldCheck,
+  TrendingUp,
+  Users,
+  WalletCards,
+} from "lucide-react";
+
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  Bar,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  Cell,
+  Pie,
+  PieChart,
+} from "recharts";
+
+import api from "@/api/api";
+
+import AppShell from "@/components/AppShell";
+
+import {
+  BackgroundBeams,
+} from "@/components/ui/background-beams";
+
+import {
+  Badge,
+} from "@/components/ui/badge";
+
+import {
+  Button,
+} from "@/components/ui/button";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
+function Dashboard() {
+  const navigate =
+    useNavigate();
+
+  const [
+    user,
+    setUser,
+  ] = useState(null);
+
+  const [
+    groups,
+    setGroups,
+  ] = useState([]);
+
+  const [
+    rounds,
+    setRounds,
+  ] = useState([]);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+
+  /* =====================================================
+     LOAD REAL DATA
+  ===================================================== */
+
+  useEffect(() => {
     const loadDashboard =
       async () => {
         try {
+          setLoading(true);
+
           const [
             userResponse,
-            groupResponse,
+            groupsResponse,
           ] = await Promise.all([
             api.get(
               "/users/me"
             ),
-  
+
             api.get(
               "/chit-groups/"
             ),
           ]);
-  
+
+          const currentUser =
+            userResponse.data;
+
+          const currentGroups =
+            groupsResponse.data ||
+            [];
+
           setUser(
-            userResponse.data
+            currentUser
           );
-  
+
           setGroups(
-            groupResponse.data
+            currentGroups
           );
-  
+
+          const roundRequests =
+            currentGroups.map(
+              async (group) => {
+                try {
+                  const response =
+                    await api.get(
+                      `/chit-groups/${group.chit_id}/rounds`
+                    );
+
+                  return (
+                    response.data ||
+                    []
+                  ).map(
+                    (round) => ({
+                      ...round,
+
+                      chitId:
+                        group.chit_id,
+
+                      groupName:
+                        group.name,
+                    })
+                  );
+                } catch {
+                  return [];
+                }
+              }
+            );
+
+          const roundResults =
+            await Promise.all(
+              roundRequests
+            );
+
+          setRounds(
+            roundResults.flat()
+          );
+
           setError("");
         } catch (error) {
           if (
@@ -119,2333 +179,2152 @@ import {
             localStorage.removeItem(
               "token"
             );
-  
-            navigate("/");
-          } else {
-            setError(
-              error.response
-                ?.data
-                ?.detail ||
-                "Unable to load dashboard"
+
+            navigate(
+              "/login"
             );
+
+            return;
           }
+
+          setError(
+            error.response
+              ?.data
+              ?.detail ||
+              "Unable to load dashboard."
+          );
         } finally {
           setLoading(false);
         }
       };
-  
-    useEffect(() => {
-      loadDashboard();
-    }, []);
-  
-    /* =====================================================
-       CALCULATIONS
-    ===================================================== */
-  
-    const calculatedPool =
-      useMemo(() => {
-        const contribution =
-          Number(
-            contributionAmount
-          );
-  
-        const members =
-          Number(
-            memberCount
-          );
-  
-        if (
-          !contribution ||
-          !members
-        ) {
-          return 0;
-        }
-  
-        return (
-          contribution *
-          members
-        );
-      }, [
-        contributionAmount,
-        memberCount,
-      ]);
-  
-    const totalMembers =
-      groups.reduce(
-        (sum, group) =>
-          sum +
-          Number(
-            group.number_of_members ||
-              0
-          ),
-        0
+
+    loadDashboard();
+  }, [navigate]);
+
+
+  /* =====================================================
+     HELPERS
+  ===================================================== */
+
+  const money =
+    (value) =>
+      Number(
+        value || 0
+      ).toLocaleString(
+        "en-IN"
       );
-  
-    const totalContribution =
-      groups.reduce(
-        (sum, group) =>
-          sum +
-          Number(
-            group.contribution_amount ||
-              0
-          ),
-        0
-      );
-  
-    const totalPoolValue =
-      groups.reduce(
-        (sum, group) =>
-          sum +
-          Number(
-            group.total_amount ||
-              0
-          ),
-        0
-      );
-  
-    /* =====================================================
-       CREATE GROUP
-    ===================================================== */
-  
-    const handleCreateGroup =
-      async (e) => {
-        e.preventDefault();
-  
-        setCreateLoading(
-          true
+
+
+  const shortMoney =
+    (value) => {
+      const amount =
+        Number(
+          value || 0
         );
-  
-        setCreateMessage(
-          ""
+
+      if (
+        amount >=
+        10000000
+      ) {
+        return `₹${(
+          amount /
+          10000000
+        ).toFixed(1)}Cr`;
+      }
+
+      if (
+        amount >=
+        100000
+      ) {
+        return `₹${(
+          amount /
+          100000
+        ).toFixed(1)}L`;
+      }
+
+      if (
+        amount >=
+        1000
+      ) {
+        return `₹${(
+          amount /
+          1000
+        ).toFixed(1)}K`;
+      }
+
+      return `₹${money(
+        amount
+      )}`;
+    };
+
+
+  const getRoundState =
+    (round) =>
+      String(
+        round.current_state ||
+        round.state ||
+        "ROUND_CREATED"
+      );
+
+
+  const readableState =
+    (state) =>
+      String(
+        state || ""
+      )
+        .replaceAll(
+          "_",
+          " "
+        )
+        .toLowerCase()
+        .replace(
+          /\b\w/g,
+          (letter) =>
+            letter.toUpperCase()
         );
-  
-        if (
-          Number(memberCount) <
-          2
-        ) {
-          setCreateMessage(
-            "A chit group must have at least 2 members."
-          );
-  
-          setCreateLoading(
-            false
-          );
-  
-          return;
-        }
-  
-        if (
-          Number(duration) <=
+
+
+  /* =====================================================
+     FINANCIAL DATA
+  ===================================================== */
+
+  const managedGroups =
+    useMemo(
+      () =>
+        groups.filter(
+          (group) =>
+            Number(
+              group.created_by
+            ) ===
+            Number(
+              user?.user_id
+            )
+        ),
+      [
+        groups,
+        user,
+      ]
+    );
+
+
+  const totalPool =
+    useMemo(
+      () =>
+        groups.reduce(
+          (sum, group) =>
+            sum +
+            Number(
+              group.total_amount ||
+                0
+            ),
           0
-        ) {
-          setCreateMessage(
-            "Duration must be greater than 0."
+        ),
+      [groups]
+    );
+
+
+  const managedPool =
+    useMemo(
+      () =>
+        managedGroups.reduce(
+          (sum, group) =>
+            sum +
+            Number(
+              group.total_amount ||
+                0
+            ),
+          0
+        ),
+      [managedGroups]
+    );
+
+
+  const configuredContributions =
+    useMemo(
+      () =>
+        groups.reduce(
+          (sum, group) =>
+            sum +
+            Number(
+              group.contribution_amount ||
+                0
+            ),
+          0
+        ),
+      [groups]
+    );
+
+
+  const totalMemberCapacity =
+    useMemo(
+      () =>
+        groups.reduce(
+          (sum, group) =>
+            sum +
+            Number(
+              group.number_of_members ||
+                0
+            ),
+          0
+        ),
+      [groups]
+    );
+
+
+  const averagePool =
+    groups.length
+      ? totalPool /
+        groups.length
+      : 0;
+
+
+  const averageContribution =
+    groups.length
+      ? configuredContributions /
+        groups.length
+      : 0;
+
+
+  /* =====================================================
+     ROUND DATA
+  ===================================================== */
+
+  const activeRounds =
+    rounds.filter(
+      (round) =>
+        getRoundState(
+          round
+        ) !==
+        "ROUND_SETTLED"
+    );
+
+
+  const settledRounds =
+    rounds.filter(
+      (round) =>
+        getRoundState(
+          round
+        ) ===
+        "ROUND_SETTLED"
+    );
+
+
+  const biddingRounds =
+    rounds.filter(
+      (round) =>
+        getRoundState(
+          round
+        ).includes(
+          "BIDDING"
+        )
+    );
+
+
+  const challengeRounds =
+    rounds.filter(
+      (round) => {
+        const state =
+          getRoundState(
+            round
           );
-  
-          setCreateLoading(
-            false
-          );
-  
-          return;
-        }
-  
-        try {
-          const response =
-            await api.post(
-              "/chit-groups/",
-              {
-                name:
-                  groupName,
-  
-                contribution_amount:
-                  Number(
-                    contributionAmount
-                  ),
-  
-                total_amount:
-                  calculatedPool,
-  
-                number_of_members:
-                  Number(
-                    memberCount
-                  ),
-  
-                duration:
-                  Number(
-                    duration
-                  ),
-              }
-            );
-  
-          setCreateMessage(
-            "Chit group created successfully."
-          );
-  
-          setGroupName("");
-          setContributionAmount(
-            ""
-          );
-          setMemberCount("");
-          setDuration("");
-  
-          await loadDashboard();
-  
-          setTimeout(() => {
-            setShowCreateGroup(
-              false
-            );
-  
-            navigate(
-              `/chits/${response.data.chit_id}`
-            );
-          }, 500);
-        } catch (error) {
-          setCreateMessage(
-            error.response
-              ?.data
-              ?.detail ||
-              "Unable to create chit group"
-          );
-        } finally {
-          setCreateLoading(
-            false
-          );
-        }
-      };
-  
-    /* =====================================================
-       PROCESS
-    ===================================================== */
-  
-    const processSteps = [
-      {
-        number: "01",
-        title: "Join",
-        short:
-          "Members enter the chit group",
-        description:
-          "Participants become part of a structured chit group with defined contribution rules.",
-        icon: UserPlus,
-      },
-  
-      {
-        number: "02",
-        title: "Contribute",
-        short:
-          "Periodic amount is submitted",
-        description:
-          "Every member submits the required contribution for the active round.",
-        icon:
-          CircleDollarSign,
-      },
-  
-      {
-        number: "03",
-        title: "Verify",
-        short:
-          "Payments are confirmed",
-        description:
-          "Contributions are verified before the workflow can move into bidding.",
-        icon:
-          ShieldCheck,
-      },
-  
-      {
-        number: "04",
-        title: "Bid",
-        short:
-          "Eligible members participate",
-        description:
-          "Verified members participate in the controlled bidding stage.",
-        icon: Gavel,
-      },
-  
-      {
-        number: "05",
-        title: "Confirm",
-        short:
-          "Result and challenge window",
-        description:
-          "A provisional result is produced and may pass through challenge or dispute handling.",
-        icon: Trophy,
-      },
-  
-      {
-        number: "06",
-        title: "Payout",
-        short:
-          "Winner payout is verified",
-        description:
-          "The selected payout moves through verification before final settlement.",
-        icon:
-          WalletCards,
-      },
-  
-      {
-        number: "07",
-        title: "Settle",
-        short:
-          "Round closes transparently",
-        description:
-          "The round is settled and important actions remain recorded in the audit history.",
-        icon:
-          BadgeCheck,
-      },
-    ];
-  
-    if (loading) {
-      return (
-        <div className="auth-page">
-          Loading ChitFlow...
-        </div>
+
+        return (
+          state ===
+            "CHALLENGE_OPEN" ||
+          state.includes(
+            "DISPUTE"
+          )
+        );
+      }
+    );
+
+
+  /* =====================================================
+     CHART DATA
+  ===================================================== */
+
+  const groupChartData =
+    useMemo(
+      () =>
+        [...groups]
+          .sort(
+            (a, b) =>
+              Number(
+                b.total_amount ||
+                  0
+              ) -
+              Number(
+                a.total_amount ||
+                  0
+              )
+          )
+          .map(
+            (group) => ({
+              name:
+                group.name?.length >
+                18
+                  ? `${group.name.slice(
+                      0,
+                      18
+                    )}…`
+                  : group.name,
+
+              fullName:
+                group.name,
+
+              pool:
+                Number(
+                  group.total_amount ||
+                    0
+                ),
+
+              contribution:
+                Number(
+                  group.contribution_amount ||
+                    0
+                ),
+            })
+          ),
+      [groups]
+    );
+
+
+  const roundHealthData = [
+    {
+      name:
+        "Active",
+
+      value:
+        activeRounds.length,
+    },
+    {
+      name:
+        "Settled",
+
+      value:
+        settledRounds.length,
+    },
+    {
+      name:
+        "Bidding",
+
+      value:
+        biddingRounds.length,
+    },
+    {
+      name:
+        "Challenges",
+
+      value:
+        challengeRounds.length,
+    },
+  ].filter(
+    (item) =>
+      item.value > 0
+  );
+
+
+  const pieColors = [
+    "#2563eb",
+    "#16a34a",
+    "#7c3aed",
+    "#f59e0b",
+  ];
+
+
+  const visibleGroups =
+    groups.slice(
+      0,
+      5
+    );
+
+
+  const recentRounds =
+    [...rounds]
+      .sort(
+        (a, b) =>
+          Number(
+            b.round_id ||
+              0
+          ) -
+          Number(
+            a.round_id ||
+              0
+          )
+      )
+      .slice(
+        0,
+        5
       );
-    }
-  
+
+
+  /* =====================================================
+     LOADING
+  ===================================================== */
+
+  if (loading) {
     return (
-      <AppShell
-        user={user}
-        active="dashboard"
-      >
-  
-        <style>{`
-  
-          /* =================================================
-             DASHBOARD HEADER ACTION
-          ================================================= */
-  
-          .dashboard-heading-row {
-            display: flex;
-  
-            align-items:
-              flex-end;
-  
-            justify-content:
-              space-between;
-  
-            gap: 25px;
-  
-            margin-bottom:
-              24px;
-          }
-  
-          .dashboard-heading-row
-          .page-heading {
-            margin-bottom: 0;
-          }
-  
-          .create-group-button {
-            min-height: 43px;
-  
-            padding:
-              0 17px;
-  
-            display:
-              inline-flex;
-  
-            align-items:
-              center;
-  
-            justify-content:
-              center;
-  
-            gap: 7px;
-  
-            border: none;
-  
-            border-radius:
-              12px;
-  
-            background:
-              linear-gradient(
-                135deg,
-                #1bad82,
-                #0e7f61
-              );
-  
-            color: white;
-  
-            font-size: 9px;
-  
-            font-weight: 900;
-  
-            cursor: pointer;
-  
-            box-shadow:
-              0 10px 24px
-              rgba(
-                19,
-                151,
-                112,
-                0.20
-              );
-  
-            transition:
-              0.2s ease;
-          }
-  
-          .create-group-button:hover {
-            transform:
-              translateY(-2px);
-  
-            box-shadow:
-              0 15px 30px
-              rgba(
-                19,
-                151,
-                112,
-                0.25
-              );
-          }
-  
-          /* =================================================
-             CREATE GROUP PANEL
-          ================================================= */
-  
-          .create-group-panel {
-            margin-top: 22px;
-  
-            padding: 25px;
-  
-            border:
-              1px solid
-              #d7e8e3;
-  
-            border-radius:
-              24px;
-  
-            background:
-              linear-gradient(
-                145deg,
-                #f3fbf8,
-                #ffffff
-              );
-  
-            box-shadow:
-              0 16px 38px
-              rgba(
-                17,
-                47,
-                55,
-                0.06
-              );
-          }
-  
-          .create-group-header {
-            display: flex;
-  
-            align-items:
-              center;
-  
-            justify-content:
-              space-between;
-  
-            gap: 20px;
-  
-            margin-bottom:
-              21px;
-          }
-  
-          .create-group-title {
-            display: flex;
-  
-            align-items:
-              center;
-  
-            gap: 11px;
-          }
-  
-          .create-group-icon {
-            width: 43px;
-            height: 43px;
-  
-            display: grid;
-            place-items: center;
-  
-            border-radius:
-              14px;
-  
-            background:
-              var(--green-light);
-  
-            color:
-              var(--green-dark);
-          }
-  
-          .create-group-title
-          h2 {
-            margin: 0;
-  
-            color:
-              #17323a;
-  
-            font-size: 14px;
-          }
-  
-          .create-group-title
-          p {
-            margin:
-              4px 0 0;
-  
-            color:
-              var(--muted);
-  
-            font-size: 9px;
-          }
-  
-          .create-group-close {
-            width: 36px;
-            height: 36px;
-  
-            display: grid;
-            place-items: center;
-  
-            border:
-              1px solid
-              var(--border);
-  
-            border-radius:
-              11px;
-  
-            background: white;
-  
-            color:
-              #61747b;
-  
-            cursor: pointer;
-          }
-  
-          .create-group-form {
-            display: grid;
-  
-            grid-template-columns:
-              1.5fr
-              1fr
-              0.8fr
-              0.8fr;
-  
-            gap: 13px;
-          }
-  
-          .create-group-form
-          label {
-            min-width: 0;
-  
-            display: flex;
-  
-            flex-direction:
-              column;
-  
-            gap: 7px;
-          }
-  
-          .create-group-form
-          label span {
-            color:
-              #657980;
-  
-            font-size: 7px;
-  
-            font-weight: 900;
-  
-            letter-spacing:
-              0.10em;
-          }
-  
-          .create-group-form
-          input {
-            width: 100%;
-  
-            height: 44px;
-  
-            padding:
-              0 12px;
-  
-            border:
-              1px solid
-              #dbe6e8;
-  
-            border-radius:
-              11px;
-  
-            background: white;
-  
-            color:
-              #173039;
-  
-            outline: none;
-          }
-  
-          .create-group-form
-          input:focus {
-            border-color:
-              #68c3a6;
-  
-            box-shadow:
-              0 0 0 4px
-              rgba(
-                24,
-                167,
-                124,
-                0.07
-              );
-          }
-  
-          .create-group-summary {
-            margin-top: 15px;
-  
-            padding:
-              16px;
-  
-            display: flex;
-  
-            align-items:
-              center;
-  
-            justify-content:
-              space-between;
-  
-            gap: 20px;
-  
-            border:
-              1px solid
-              #dfeae7;
-  
-            border-radius:
-              15px;
-  
-            background: white;
-          }
-  
-          .create-group-summary
-          span {
-            display: block;
-  
-            color:
-              #869499;
-  
-            font-size: 7px;
-  
-            font-weight: 900;
-  
-            letter-spacing:
-              0.10em;
-          }
-  
-          .create-group-summary
-          strong {
-            display: block;
-  
-            margin-top: 4px;
-  
-            color:
-              #183039;
-  
-            font-size: 18px;
-  
-            letter-spacing:
-              -0.04em;
-          }
-  
-          /* =================================================
-             GROUP LIST
-          ================================================= */
-  
-          .dashboard-group-list {
-            margin-top: 22px;
-  
-            display: grid;
-  
-            gap: 12px;
-          }
-  
-          .dashboard-group-row {
-            padding: 18px;
-  
-            display: flex;
-  
-            align-items: center;
-  
-            justify-content:
-              space-between;
-  
-            gap: 20px;
-  
-            border:
-              1px solid
-              var(--border);
-  
-            border-radius:
-              18px;
-  
-            background: white;
-  
-            transition:
-              0.2s ease;
-          }
-  
-          .dashboard-group-row:hover {
-            transform:
-              translateY(-2px);
-  
-            border-color:
-              #cbdeda;
-  
-            box-shadow:
-              0 12px 28px
-              rgba(
-                17,
-                45,
-                55,
-                0.07
-              );
-          }
-  
-          .dashboard-group-row
-          h3 {
-            margin:
-              10px 0 5px;
-  
-            color:
-              var(--text);
-  
-            font-size: 15px;
-          }
-  
-          .dashboard-group-meta {
-            color:
-              var(--muted);
-  
-            font-size: 10px;
-          }
-  
-          .dashboard-empty-state {
-            padding:
-              48px 20px;
-  
-            text-align: center;
-  
-            border:
-              1px dashed
-              #d5e1e4;
-  
-            border-radius:
-              18px;
-  
-            background:
-              #fbfcfc;
-          }
-  
-          .dashboard-empty-icon {
-            width: 53px;
-            height: 53px;
-  
-            margin:
-              0 auto 13px;
-  
-            display: grid;
-            place-items: center;
-  
-            border-radius:
-              16px;
-  
-            background:
-              var(--green-light);
-  
-            color:
-              var(--green-dark);
-          }
-  
-          .dashboard-empty-state
-          strong {
-            display: block;
-  
-            color:
-              #1a333b;
-  
-            font-size: 12px;
-          }
-  
-          .dashboard-empty-state
-          p {
-            max-width: 350px;
-  
-            margin:
-              7px auto 0;
-  
-            color:
-              var(--muted);
-  
-            font-size: 9px;
-  
-            line-height: 1.6;
-          }
-  
-          /* =================================================
-             PROCESS
-          ================================================= */
-  
-          .cf-process {
-            position: relative;
-  
-            overflow: hidden;
-  
-            margin-top: 24px;
-  
-            padding: 34px;
-  
-            border-radius: 30px;
-  
-            background:
-              radial-gradient(
-                circle at 12% 10%,
-                rgba(
-                  56,
-                  214,
-                  169,
-                  0.16
-                ),
-                transparent 28%
-              ),
-              radial-gradient(
-                circle at 88% 90%,
-                rgba(
-                  61,
-                  177,
-                  205,
-                  0.14
-                ),
-                transparent 30%
-              ),
-              linear-gradient(
-                145deg,
-                #0a2b34,
-                #061d26 72%
-              );
-  
-            box-shadow:
-              0 24px 60px
-              rgba(
-                8,
-                34,
-                42,
-                0.14
-              );
-  
-            color: white;
-          }
-  
-          .cf-process::before {
-            content: "";
-  
-            position: absolute;
-  
-            inset: 0;
-  
-            opacity: 0.11;
-  
-            pointer-events: none;
-  
-            background-image:
-              linear-gradient(
-                rgba(
-                  255,
-                  255,
-                  255,
-                  0.08
-                )
-                1px,
-                transparent 1px
-              ),
-              linear-gradient(
-                90deg,
-                rgba(
-                  255,
-                  255,
-                  255,
-                  0.08
-                )
-                1px,
-                transparent 1px
-              );
-  
-            background-size:
-              42px 42px;
-          }
-  
-          .cf-process-header {
-            position: relative;
-  
-            z-index: 2;
-  
-            display: flex;
-  
-            justify-content:
-              space-between;
-  
-            gap: 30px;
-  
-            align-items:
-              flex-start;
-          }
-  
-          .cf-process-eyebrow {
-            display:
-              inline-flex;
-  
-            margin-bottom:
-              10px;
-  
-            color:
-              #5ce0b7;
-  
-            font-size:
-              8px;
-  
-            font-weight:
-              900;
-  
-            letter-spacing:
-              0.15em;
-          }
-  
-          .cf-process-header
-          h2 {
-            max-width:
-              650px;
-  
-            margin: 0;
-  
-            color: white;
-  
-            font-size:
-              clamp(
-                25px,
-                3vw,
-                38px
-              );
-  
-            line-height:
-              1.06;
-  
-            letter-spacing:
-              -0.05em;
-          }
-  
-          .cf-process-header
-          p {
-            max-width:
-              650px;
-  
-            margin:
-              12px 0 0;
-  
-            color:
-              #8faab3;
-  
-            font-size:
-              10px;
-  
-            line-height:
-              1.7;
-          }
-  
-          .cf-process-chip {
-            min-width:
-              180px;
-  
-            padding:
-              14px 16px;
-  
-            border:
-              1px solid
-              rgba(
-                255,
-                255,
-                255,
-                0.08
-              );
-  
-            border-radius:
-              16px;
-  
-            background:
-              rgba(
-                255,
-                255,
-                255,
-                0.045
-              );
-          }
-  
-          .cf-process-chip
-          span {
-            color:
-              #668993;
-  
-            font-size:
-              7px;
-  
-            font-weight:
-              900;
-  
-            letter-spacing:
-              0.12em;
-          }
-  
-          .cf-process-chip
-          strong {
-            display: block;
-  
-            margin-top: 5px;
-  
-            color:
-              #d8ece7;
-  
-            font-size:
-              10px;
-  
-            line-height:
-              1.5;
-          }
-  
-          .cf-process-map {
-            position: relative;
-  
-            z-index: 2;
-  
-            height: 520px;
-  
-            margin-top:
-              24px;
-          }
-  
-          .cf-process-route {
-            position: absolute;
-  
-            inset: 0;
-  
-            width: 100%;
-            height: 100%;
-          }
-  
-          .cf-process-path-shadow {
-            fill: none;
-  
-            stroke:
-              rgba(
-                65,
-                211,
-                169,
-                0.07
-              );
-  
-            stroke-width:
-              14;
-  
-            stroke-linecap:
-              round;
-          }
-  
-          .cf-process-path {
-            fill: none;
-  
-            stroke:
-              rgba(
-                98,
-                198,
-                188,
-                0.45
-              );
-  
-            stroke-width:
-              2.3;
-  
-            stroke-linecap:
-              round;
-  
-            stroke-dasharray:
-              4 10;
-  
-            animation:
-              cfPathMove
-              18s linear
-              infinite;
-          }
-  
-          @keyframes cfPathMove {
-            to {
-              stroke-dashoffset:
-                -150;
-            }
-          }
-  
-          .cf-stage {
-            position: absolute;
-  
-            width: 155px;
-  
-            transform:
-              translate(
-                -50%,
-                -50%
-              );
-  
-            text-align:
-              center;
-          }
-  
-          .cf-stage-1 {
-            left: 6%;
-            top: 67%;
-          }
-  
-          .cf-stage-2 {
-            left: 21%;
-            top: 25%;
-          }
-  
-          .cf-stage-3 {
-            left: 36%;
-            top: 67%;
-          }
-  
-          .cf-stage-4 {
-            left: 51%;
-            top: 25%;
-          }
-  
-          .cf-stage-5 {
-            left: 66%;
-            top: 67%;
-          }
-  
-          .cf-stage-6 {
-            left: 81%;
-            top: 25%;
-          }
-  
-          .cf-stage-7 {
-            left: 94%;
-            top: 67%;
-          }
-  
-          .cf-stage-number {
-            position:
-              absolute;
-  
-            top: -8px;
-            right: 18px;
-  
-            z-index: 5;
-  
-            width: 26px;
-            height: 26px;
-  
-            display: grid;
-            place-items: center;
-  
-            border:
-              1px solid
-              rgba(
-                255,
-                255,
-                255,
-                0.10
-              );
-  
-            border-radius:
-              8px;
-  
-            background:
-              #10323b;
-  
-            color:
-              #77a0a8;
-  
-            font-size:
-              7px;
-  
-            font-weight:
-              900;
-          }
-  
-          .cf-stage-circle {
-            position: relative;
-  
-            width: 96px;
-            height: 96px;
-  
-            margin: 0 auto;
-  
-            display: grid;
-            place-items: center;
-  
-            border-radius:
-              50%;
-  
-            border:
-              1px solid
-              rgba(
-                90,
-                221,
-                183,
-                0.22
-              );
-  
-            background:
-              radial-gradient(
-                circle,
-                rgba(
-                  61,
-                  207,
-                  165,
-                  0.15
-                ),
-                rgba(
-                  255,
-                  255,
-                  255,
-                  0.025
-                )
-              );
-  
-            color:
-              #60dcaf;
-  
-            box-shadow:
-              inset
-              0 0 0 8px
-              rgba(
-                255,
-                255,
-                255,
-                0.015
-              );
-  
-            transition:
-              0.25s ease;
-          }
-  
-          .cf-stage-circle::before {
-            content: "";
-  
-            position:
-              absolute;
-  
-            inset: -9px;
-  
-            border:
-              1px solid
-              rgba(
-                255,
-                255,
-                255,
-                0.05
-              );
-  
-            border-radius:
-              50%;
-          }
-  
-          .cf-stage:hover
-          .cf-stage-circle {
-            transform:
-              translateY(-4px)
-              scale(1.05);
-  
-            color:
-              #08252c;
-  
-            background:
-              linear-gradient(
-                145deg,
-                #68e4be,
-                #31b58b
-              );
-  
-            border-color:
-              #70e8c3;
-  
-            box-shadow:
-              0 0 0 8px
-              rgba(
-                70,
-                217,
-                174,
-                0.07
-              ),
-              0 0 38px
-              rgba(
-                70,
-                217,
-                174,
-                0.20
-              );
-          }
-  
-          .cf-stage-copy {
-            margin-top:
-              15px;
-          }
-  
-          .cf-stage-copy
-          strong {
-            display: block;
-  
-            color:
-              #eaf7f4;
-  
-            font-size:
-              10px;
-          }
-  
-          .cf-stage-copy
-          span {
-            display: block;
-  
-            margin-top:
-              4px;
-  
-            color:
-              #63dcb3;
-  
-            font-size:
-              8px;
-  
-            font-weight:
-              700;
-  
-            line-height:
-              1.4;
-          }
-  
-          .cf-stage-copy
-          p {
-            max-width:
-              150px;
-  
-            margin:
-              6px auto 0;
-  
-            color:
-              #708d96;
-  
-            font-size:
-              7px;
-  
-            line-height:
-              1.5;
-          }
-  
-          .cf-process-footer {
-            position: relative;
-  
-            z-index: 2;
-  
-            display: flex;
-  
-            justify-content:
-              space-between;
-  
-            align-items:
-              center;
-  
-            gap: 18px;
-  
-            padding-top:
-              20px;
-  
-            border-top:
-              1px solid
-              rgba(
-                255,
-                255,
-                255,
-                0.07
-              );
-          }
-  
-          .cf-process-footer-left {
-            display: flex;
-  
-            align-items:
-              center;
-  
-            gap: 10px;
-  
-            color:
-              #5ddcaf;
-          }
-  
-          .cf-process-footer-left
-          div {
-            display: flex;
-  
-            flex-direction:
-              column;
-  
-            gap: 2px;
-          }
-  
-          .cf-process-footer-left
-          span {
-            color:
-              #668993;
-  
-            font-size:
-              7px;
-  
-            font-weight:
-              900;
-  
-            letter-spacing:
-              0.12em;
-          }
-  
-          .cf-process-footer-left
-          strong {
-            color:
-              #c4dad6;
-  
-            font-size:
-              9px;
-          }
-  
-          .cf-process-footer-right {
-            color:
-              #6d9099;
-  
-            font-size:
-              8px;
-  
-            line-height:
-              1.5;
-  
-            text-align:
-              right;
-          }
-  
-          /* =================================================
-             RESPONSIVE
-          ================================================= */
-  
-          @media (
-            max-width: 980px
-          ) {
-  
-            .dashboard-heading-row {
-              align-items:
-                flex-start;
-  
-              flex-direction:
-                column;
-            }
-  
-            .create-group-form {
-              grid-template-columns:
-                repeat(
-                  2,
-                  minmax(
-                    0,
-                    1fr
-                  )
-                );
-            }
-  
-            .cf-process-header {
-              flex-direction:
-                column;
-            }
-  
-            .cf-process-chip {
-              width: 100%;
-            }
-  
-            .cf-process-map {
-              height: auto;
-  
-              display: grid;
-  
-              grid-template-columns:
-                repeat(
-                  2,
-                  minmax(
-                    0,
-                    1fr
-                  )
-                );
-  
-              gap: 14px;
-  
-              margin-top:
-                25px;
-            }
-  
-            .cf-process-route {
-              display: none;
-            }
-  
-            .cf-stage {
-              position: relative;
-  
-              left:
-                auto !important;
-  
-              top:
-                auto !important;
-  
-              width: auto;
-  
-              padding:
-                20px;
-  
-              transform: none;
-  
-              border:
-                1px solid
-                rgba(
-                  255,
-                  255,
-                  255,
-                  0.06
-                );
-  
-              border-radius:
-                18px;
-  
-              background:
-                rgba(
-                  255,
-                  255,
-                  255,
-                  0.025
-                );
-            }
-  
-            .cf-stage-number {
-              top: 11px;
-              right: 11px;
-            }
-          }
-  
-          @media (
-            max-width: 620px
-          ) {
-  
-            .create-group-form {
-              grid-template-columns:
-                1fr;
-            }
-  
-            .create-group-summary {
-              align-items:
-                flex-start;
-  
-              flex-direction:
-                column;
-            }
-  
-            .dashboard-group-row {
-              align-items:
-                flex-start;
-  
-              flex-direction:
-                column;
-            }
-  
-            .dashboard-group-row
-            button {
-              width: 100%;
-            }
-  
-            .cf-process {
-              padding: 22px;
-            }
-  
-            .cf-process-map {
-              grid-template-columns:
-                1fr;
-            }
-  
-            .cf-process-footer {
-              align-items:
-                flex-start;
-  
-              flex-direction:
-                column;
-            }
-  
-            .cf-process-footer-right {
-              text-align:
-                left;
-            }
-          }
-  
-        `}</style>
-  
-        <main className="page-content">
-  
-          {/* =================================================
-              PAGE HEADING
-          ================================================= */}
-  
-          <div className="dashboard-heading-row">
-  
-            <div className="page-heading">
-  
-              <small>
-                Overview
-              </small>
-  
-              <h1>
-                Good to see you
-                {user?.name
-                  ? `, ${
-                      user.name.split(
-                        " "
-                      )[0]
-                    }`
-                  : ""}
-                .
-              </h1>
-  
-              <p>
-                Track your chit
-                groups and follow
-                each round from
-                contribution to
-                settlement.
-              </p>
-  
-            </div>
-  
-            <button
-              type="button"
-              className="create-group-button"
-              onClick={() => {
-                setShowCreateGroup(
-                  true
-                );
-  
-                setCreateMessage(
-                  ""
-                );
-              }}
-            >
-  
-              <Plus
-                size={15}
-              />
-  
-              Create Chit Group
-  
-            </button>
-  
+      <div className="flex min-h-screen items-center justify-center bg-[#f4f5f7] text-[16px] text-black/50">
+        Loading ChitFlow...
+      </div>
+    );
+  }
+
+
+  return (
+    <AppShell
+      user={user}
+      active="dashboard"
+    >
+
+      <main className="mx-auto w-full max-w-[1500px] space-y-5">
+
+        {error && (
+
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-[15px] text-red-700">
+            {error}
           </div>
-  
-          {error && (
-            <div className="app-message error">
-              {error}
-            </div>
-          )}
-  
-          {/* =================================================
-              HERO
-          ================================================= */}
-  
-          <div className="dashboard-welcome">
-  
-            <section className="hero-card">
-  
-              <div className="hero-content">
-  
-                <span className="hero-label">
-                  CHITFLOW
-                </span>
-  
-                <h2 className="hero-title">
-                  Build better
-                  saving habits
-                  together.
-                </h2>
-  
-                <p className="hero-copy">
-                  Contributions,
-                  bidding,
-                  verification and
-                  payouts are
-                  organized into one
-                  transparent
-                  lifecycle.
-                </p>
-  
+
+        )}
+
+
+        {/* =================================================
+            MAIN FINANCIAL HERO
+        ================================================= */}
+
+        <section className="chitflow-dark relative isolate overflow-hidden rounded-[30px] bg-[#07090d] px-7 py-8 text-white md:px-10 md:py-10">
+
+          <BackgroundBeams />
+
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(37,99,235,0.24),transparent_28%),radial-gradient(circle_at_55%_110%,rgba(124,58,237,0.14),transparent_35%)]"
+          />
+
+          <div className="relative z-10 grid gap-10 xl:grid-cols-[1.1fr_.9fr] xl:items-end">
+
+            <div>
+
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-[13px] font-medium text-white/65 backdrop-blur-xl">
+
+                <Activity
+                  size={14}
+                  className="text-blue-300"
+                />
+
+                Financial control center
+
               </div>
-  
-              <div className="hero-graphic" />
-  
-            </section>
-  
-          </div>
-  
-          {/* =================================================
-              CREATE GROUP
-          ================================================= */}
-  
-          {showCreateGroup && (
-  
-            <section className="create-group-panel">
-  
-              <div className="create-group-header">
-  
-                <div className="create-group-title">
-  
-                  <div className="create-group-icon">
-  
-                    <WalletCards
-                      size={20}
-                    />
-  
-                  </div>
-  
-                  <div>
-  
-                    <h2>
-                      Create a new
-                      chit group
-                    </h2>
-  
-                    <p>
-                      Define the basic
-                      financial structure
-                      of your group.
-                    </p>
-  
-                  </div>
-  
-                </div>
-  
-                <button
+
+              <h1 className="mt-6 max-w-[720px] !text-white text-[39px] font-semibold leading-[1.02] tracking-[-0.055em] sm:text-[48px] lg:text-[55px]">
+
+                Welcome back,{" "}
+                {user?.name ||
+                  "ChitFlow Member"}.
+
+              </h1>
+
+              <p className="mt-5 max-w-[650px] !text-white/60 text-[16px] leading-7">
+
+                See where your chit money
+                is allocated, monitor active
+                rounds and follow the entire
+                financial lifecycle.
+
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+
+                <Button
                   type="button"
-                  className="create-group-close"
+                  size="lg"
+                  className="h-12 rounded-full bg-white px-6 text-[15px] font-semibold text-black hover:bg-white/90"
                   onClick={() =>
-                    setShowCreateGroup(
-                      false
+                    navigate(
+                      "/chit-groups"
                     )
                   }
                 >
-  
-                  <X
-                    size={15}
+
+                  View Chit Groups
+
+                  <ArrowRight
+                    size={17}
                   />
-  
-                </button>
-  
+
+                </Button>
+
+                <Button
+                  type="button"
+                  size="lg"
+                  variant="outline"
+                  className="cf-dark-action h-12 rounded-full border-white/15 bg-white/[0.05] px-6 !text-white hover:bg-white/10 hover:!text-white"
+                  onClick={() =>
+                    navigate(
+                      "/members"
+                    )
+                  }
+                >
+
+                  Members
+
+                </Button>
+
               </div>
-  
-              <form
-                onSubmit={
-                  handleCreateGroup
+
+            </div>
+
+
+            {/* BIG MONEY CARD */}
+
+            <div className="rounded-[26px] border border-white/10 bg-white/[0.065] p-6 backdrop-blur-xl">
+
+              <div className="flex items-start justify-between">
+
+                <div>
+
+                  <div className="text-[13px] font-medium uppercase tracking-[0.09em] text-white/40">
+                    Accessible pool value
+                  </div>
+
+                  <div className="mt-3 text-[42px] font-semibold tracking-[-0.06em] text-white sm:text-[52px]">
+
+                    ₹
+                    {money(
+                      totalPool
+                    )}
+
+                  </div>
+
+                </div>
+
+                <div className="flex size-12 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-300">
+
+                  <IndianRupee
+                    size={21}
+                  />
+
+                </div>
+
+              </div>
+
+
+              <div className="mt-7 grid grid-cols-2 gap-3">
+
+                <HeroMiniMetric
+                  label="Managed value"
+                  value={
+                    shortMoney(
+                      managedPool
+                    )
+                  }
+                />
+
+                <HeroMiniMetric
+                  label="Contribution total"
+                  value={
+                    shortMoney(
+                      configuredContributions
+                    )
+                  }
+                />
+
+                <HeroMiniMetric
+                  label="Groups"
+                  value={
+                    groups.length
+                  }
+                />
+
+                <HeroMiniMetric
+                  label="Active rounds"
+                  value={
+                    activeRounds.length
+                  }
+                />
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        {/* =================================================
+            FINANCIAL KPI CARDS
+        ================================================= */}
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+          <MoneyCard
+            icon={
+              WalletCards
+            }
+            eyebrow="Portfolio"
+            label="Total pool value"
+            value={`₹${money(
+              totalPool
+            )}`}
+            note={`${groups.length} accessible chit groups`}
+            progress={
+              100
+            }
+          />
+
+          <MoneyCard
+            icon={Crown}
+            eyebrow="Managed"
+            label="Managed pool"
+            value={`₹${money(
+              managedPool
+            )}`}
+            note={`${managedGroups.length} groups created by you`}
+            progress={
+              totalPool
+                ? (
+                    managedPool /
+                    totalPool
+                  ) *
+                  100
+                : 0
+            }
+          />
+
+          <MoneyCard
+            icon={
+              CircleDollarSign
+            }
+            eyebrow="Contribution"
+            label="Configured total"
+            value={`₹${money(
+              configuredContributions
+            )}`}
+            note={`Average ₹${money(
+              averageContribution
+            )} per group`}
+            progress={
+              Math.min(
+                100,
+                groups.length
+                  ? 65
+                  : 0
+              )
+            }
+            neutralProgress
+          />
+
+          <MoneyCard
+            icon={TrendingUp}
+            eyebrow="Average"
+            label="Average chit pool"
+            value={`₹${money(
+              averagePool
+            )}`}
+            note={`${totalMemberCapacity} configured member slots`}
+            progress={
+              Math.min(
+                100,
+                groups.length
+                  ? 78
+                  : 0
+              )
+            }
+            neutralProgress
+          />
+
+        </section>
+
+
+        {/* =================================================
+            ANALYTICS
+        ================================================= */}
+
+        <section className="grid gap-5 xl:grid-cols-[1.45fr_.55fr]">
+
+          {/* BAR GRAPH */}
+
+          <Card className="rounded-[26px] border-black/[0.07] shadow-none">
+
+  <CardHeader className="px-6 pt-6 md:px-7 md:pt-7">
+
+    <div className="flex flex-wrap items-start justify-between gap-4">
+
+      <div>
+
+        <div className="text-[12px] font-semibold uppercase tracking-[0.11em] text-blue-600">
+          Portfolio performance
+        </div>
+
+        <CardTitle className="mt-2 text-[23px] font-semibold tracking-[-0.04em]">
+          Pool value vs contribution
+        </CardTitle>
+
+        <CardDescription className="mt-2 max-w-[650px] text-[14px] leading-6">
+          Compare the total configured
+          value of each chit with its
+          member contribution amount.
+        </CardDescription>
+
+      </div>
+
+      <Badge
+        variant="secondary"
+        className="rounded-full px-3 py-1.5 text-[12px]"
+      >
+        {groups.length}{" "}
+        {groups.length === 1
+          ? "group"
+          : "groups"}
+      </Badge>
+
+    </div>
+
+  </CardHeader>
+
+
+  <CardContent className="px-4 pb-6 md:px-7">
+
+    {groupChartData.length === 0 ? (
+
+      <EmptyState
+        title="No portfolio data"
+        description="Your financial visualization will appear once a chit group is available."
+      />
+
+    ) : (
+
+      <div className="mt-3 rounded-[22px] border border-black/[0.06] bg-[#fafbfc] p-4 md:p-5">
+
+        {/* LEGEND */}
+
+        <div className="mb-5 flex flex-wrap items-center gap-5">
+
+          <div className="flex items-center gap-2">
+
+            <span className="size-2.5 rounded-full bg-blue-600" />
+
+            <span className="text-[12px] text-black/50">
+              Total pool
+            </span>
+
+          </div>
+
+          <div className="flex items-center gap-2">
+
+            <span className="size-2.5 rounded-full bg-violet-600" />
+
+            <span className="text-[12px] text-black/50">
+              Contribution
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div className="h-[340px] w-full">
+
+          <ResponsiveContainer
+            width="100%"
+            height="100%"
+          >
+
+            <ComposedChart
+              data={groupChartData}
+              margin={{
+                top: 20,
+                right: 25,
+                left: 5,
+                bottom: 10,
+              }}
+            >
+
+              <CartesianGrid
+                stroke="#e5e7eb"
+                strokeDasharray="4 5"
+                vertical={false}
+              />
+
+
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{
+                  fill: "#71717a",
+                  fontSize: 12,
+                }}
+                dy={10}
+              />
+
+
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{
+                  fill: "#71717a",
+                  fontSize: 11,
+                }}
+                tickFormatter={
+                  shortMoney
                 }
-              >
-  
-                <div className="create-group-form">
-  
-                  <label>
-  
-                    <span>
-                      GROUP NAME
-                    </span>
-  
-                    <input
-                      type="text"
-                      minLength="2"
-                      maxLength="100"
-                      value={
-                        groupName
-                      }
-                      onChange={(e) =>
-                        setGroupName(
-                          e.target.value
-                        )
-                      }
-                      placeholder="Family Savings 2026"
-                      required
-                    />
-  
-                  </label>
-  
-                  <label>
-  
-                    <span>
-                      CONTRIBUTION
-                    </span>
-  
-                    <input
-                      type="number"
-                      min="1"
-                      value={
-                        contributionAmount
-                      }
-                      onChange={(e) =>
-                        setContributionAmount(
-                          e.target.value
-                        )
-                      }
-                      placeholder="5000"
-                      required
-                    />
-  
-                  </label>
-  
-                  <label>
-  
-                    <span>
-                      MEMBERS
-                    </span>
-  
-                    <input
-                      type="number"
-                      min="2"
-                      value={
-                        memberCount
-                      }
-                      onChange={(e) =>
-                        setMemberCount(
-                          e.target.value
-                        )
-                      }
-                      placeholder="10"
-                      required
-                    />
-  
-                  </label>
-  
-                  <label>
-  
-                    <span>
-                      DURATION
-                    </span>
-  
-                    <input
-                      type="number"
-                      min="1"
-                      value={
-                        duration
-                      }
-                      onChange={(e) =>
-                        setDuration(
-                          e.target.value
-                        )
-                      }
-                      placeholder="10"
-                      required
-                    />
-  
-                  </label>
-  
-                </div>
-  
-                <div className="create-group-summary">
-  
-                  <div>
-  
-                    <span>
-                      CALCULATED POOL
-                    </span>
-  
-                    <strong>
-                      ₹
-                      {calculatedPool
-                        .toLocaleString(
-                          "en-IN"
-                        )}
-                    </strong>
-  
-                  </div>
-  
-                  <button
-                    type="submit"
-                    className="primary-button"
-                    disabled={
-                      createLoading
-                    }
-                  >
-                    {createLoading
-                      ? "Creating..."
-                      : "Create Group"}
-                  </button>
-  
-                </div>
-  
-              </form>
-  
-              {createMessage && (
-  
-                <div className="app-message">
-                  {createMessage}
-                </div>
-  
-              )}
-  
-            </section>
-  
-          )}
-  
-          {/* =================================================
-              YOUR CHIT GROUPS
-          ================================================= */}
-  
-          <section className="card">
-  
-            <div className="card-header">
-  
-              <div className="card-title-area">
-  
-                <div className="card-icon green">
-  
-                  <WalletCards
-                    size={20}
-                  />
-  
-                </div>
-  
-                <div className="card-title">
-  
-                  <h2>
-                    Your chit groups
-                  </h2>
-  
-                  <p>
-                    Groups you currently
-                    participate in
-                  </p>
-  
-                </div>
-  
+                width={65}
+              />
+
+
+              <Tooltip
+                cursor={{
+                  fill:
+                    "rgba(37,99,235,0.035)",
+                }}
+                content={
+                  <DashboardFinanceTooltip />
+                }
+              />
+
+
+              <Bar
+                dataKey="pool"
+                fill="#2563eb"
+                radius={[
+                  10,
+                  10,
+                  4,
+                  4,
+                ]}
+                maxBarSize={58}
+              />
+
+
+              <Line
+                type="monotone"
+                dataKey="contribution"
+                stroke="#7c3aed"
+                strokeWidth={3}
+                dot={{
+                  r: 5,
+                  fill: "#7c3aed",
+                  stroke: "#ffffff",
+                  strokeWidth: 2,
+                }}
+                activeDot={{
+                  r: 7,
+                  fill: "#7c3aed",
+                  stroke: "#ffffff",
+                  strokeWidth: 3,
+                }}
+              />
+
+            </ComposedChart>
+
+          </ResponsiveContainer>
+
+        </div>
+
+      </div>
+
+    )}
+
+  </CardContent>
+
+</Card>
+
+
+          {/* ROUND DONUT */}
+
+          <Card className="rounded-[26px] border-black/[0.07] shadow-none">
+
+            <CardHeader className="px-6 pt-6">
+
+              <div className="text-[12px] font-semibold uppercase tracking-[0.11em] text-violet-600">
+                Lifecycle
               </div>
-  
-            </div>
-  
-            {/* STATS */}
-  
-            <div className="stats-grid">
-  
-              <div className="stat-card purple">
-  
-                <div className="stat-icon">
-  
-                  <WalletCards
-                    size={20}
-                  />
-  
-                </div>
-  
-                <div>
-  
-                  <div className="stat-value">
-                    {groups.length}
-                  </div>
-  
-                  <div className="stat-label">
-                    Chit groups
-                  </div>
-  
-                </div>
-  
-              </div>
-  
-              <div className="stat-card green">
-  
-                <div className="stat-icon">
-  
-                  <Users
-                    size={20}
-                  />
-  
-                </div>
-  
-                <div>
-  
-                  <div className="stat-value">
-                    {
-                      totalMembers
-                    }
-                  </div>
-  
-                  <div className="stat-label">
-                    Total member slots
-                  </div>
-  
-                </div>
-  
-              </div>
-  
-              <div className="stat-card blue">
-  
-                <div className="stat-icon">
-  
-                  <Coins
-                    size={20}
-                  />
-  
-                </div>
-  
-                <div>
-  
-                  <div className="stat-value">
-                    ₹
-                    {totalContribution
-                      .toLocaleString(
-                        "en-IN"
-                      )}
-                  </div>
-  
-                  <div className="stat-label">
-                    Contributions
-                  </div>
-  
-                </div>
-  
-              </div>
-  
-              <div className="stat-card yellow">
-  
-                <div className="stat-icon">
-  
-                  <PiggyBank
-                    size={20}
-                  />
-  
-                </div>
-  
-                <div>
-  
-                  <div className="stat-value">
-                    ₹
-                    {totalPoolValue
-                      .toLocaleString(
-                        "en-IN"
-                      )}
-                  </div>
-  
-                  <div className="stat-label">
-                    Combined pool value
-                  </div>
-  
-                </div>
-  
-              </div>
-  
-            </div>
-  
-            {/* GROUP LIST */}
-  
-            <div className="dashboard-group-list">
-  
-              {groups.length ===
-              0 ? (
-  
-                <div className="dashboard-empty-state">
-  
-                  <div className="dashboard-empty-icon">
-  
-                    <WalletCards
-                      size={22}
-                    />
-  
-                  </div>
-  
-                  <strong>
-                    No chit groups yet
-                  </strong>
-  
-                  <p>
-                    Create your first
-                    chit group using
-                    the button above.
-                  </p>
-  
-                </div>
-  
-              ) : (
-  
-                groups.map(
-                  (group) => (
-  
-                    <div
-                      key={
-                        group.chit_id
-                      }
-                      className="dashboard-group-row"
+
+              <CardTitle className="mt-2 text-[23px] font-semibold tracking-[-0.04em]">
+                Round health
+              </CardTitle>
+
+              <CardDescription className="mt-2 text-[14px] leading-6">
+                A quick visual of current
+                round activity.
+              </CardDescription>
+
+            </CardHeader>
+
+            <CardContent className="px-6 pb-6">
+
+              <div className="relative mx-auto h-[230px] max-w-[280px]">
+
+                {roundHealthData.length >
+                0 ? (
+
+                  <>
+
+                    <ResponsiveContainer
+                      width="100%"
+                      height="100%"
                     >
-  
-                      <div>
-  
-                        <span className="state-badge green">
-                          {group.status ||
-                            "ACTIVE"}
-                        </span>
-  
-                        <h3>
-                          {group.name}
-                        </h3>
-  
-                        <div className="dashboard-group-meta">
-  
-                          ₹
-                          {Number(
-                            group.contribution_amount ||
-                              0
-                          ).toLocaleString(
-                            "en-IN"
-                          )}
-  
-                          {" contribution · "}
-  
-                          {
-                            group.number_of_members
+
+                      <PieChart>
+
+                        <Pie
+                          data={
+                            roundHealthData
                           }
-  
-                          {" members · ₹"}
-  
-                          {Number(
-                            group.total_amount ||
-                              0
-                          ).toLocaleString(
-                            "en-IN"
+                          dataKey="value"
+                          nameKey="name"
+                          innerRadius={67}
+                          outerRadius={91}
+                          paddingAngle={4}
+                          stroke="none"
+                        >
+
+                          {roundHealthData.map(
+                            (
+                              entry,
+                              index
+                            ) => (
+
+                              <Cell
+                                key={
+                                  entry.name
+                                }
+                                fill={
+                                  pieColors[
+                                    index %
+                                      pieColors.length
+                                  ]
+                                }
+                              />
+
+                            )
                           )}
-  
-                          {" pool"}
-  
-                        </div>
-  
-                      </div>
-  
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={() =>
-                          navigate(
-                            `/chits/${group.chit_id}`
-                          )
-                        }
-                      >
-  
-                        Open{" "}
-  
-                        <ArrowRight
-                          size={13}
-                          style={{
-                            verticalAlign:
-                              "middle",
-                          }}
+
+                        </Pie>
+
+                        <Tooltip
+                          content={
+                            <RoundTooltip />
+                          }
                         />
-  
-                      </button>
-  
-                    </div>
-  
-                  )
-                )
-  
-              )}
-  
-            </div>
-  
-          </section>
-  
-          {/* =================================================
-              CHITFLOW PROCESS
-          ================================================= */}
-  
-          <section className="cf-process">
-  
-            <div className="cf-process-header">
-  
-              <div>
-  
-                <span className="cf-process-eyebrow">
-                  ◉ CHITFLOW PROCESS
-                </span>
-  
-                <h2>
-                  One chit round.
-                  <br />
-                  Seven controlled
-                  stages.
-                </h2>
-  
-                <p>
-                  Each round follows a
-                  controlled sequence
-                  so contributions,
-                  bidding, result
-                  processing and
-                  settlement cannot
-                  silently skip required
-                  stages.
-                </p>
-  
-              </div>
-  
-              <div className="cf-process-chip">
-  
-                <span>
-                  WORKFLOW MODEL
-                </span>
-  
-                <strong>
-                  Join
-                  → Contribution
-                  → Verification
-                  → Bidding
-                  → Result
-                  → Payout
-                  → Settlement
-                </strong>
-  
-              </div>
-  
-            </div>
-  
-            <div className="cf-process-map">
-  
-              <svg
-                className="cf-process-route"
-                viewBox="0 0 1200 520"
-                preserveAspectRatio="none"
-                aria-hidden="true"
-              >
-  
-                <path
-                  className="cf-process-path-shadow"
-                  d="
-                    M 65 350
-                    C 120 350 145 115 245 115
-                    S 350 350 425 350
-                    S 520 115 605 115
-                    S 700 350 785 350
-                    S 875 115 965 115
-                    S 1070 350 1130 350
-                  "
-                />
-  
-                <path
-                  className="cf-process-path"
-                  d="
-                    M 65 350
-                    C 120 350 145 115 245 115
-                    S 350 350 425 350
-                    S 520 115 605 115
-                    S 700 350 785 350
-                    S 875 115 965 115
-                    S 1070 350 1130 350
-                  "
-                />
-  
-              </svg>
-  
-              {processSteps.map(
-                (
-                  step,
-                  index
-                ) => {
-                  const Icon =
-                    step.icon;
-  
-                  return (
-                    <div
-                      key={
-                        step.number
-                      }
-                      className={`cf-stage cf-stage-${
-                        index + 1
-                      }`}
-                    >
-  
-                      <div className="cf-stage-number">
+
+                      </PieChart>
+
+                    </ResponsiveContainer>
+
+                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+
+                      <div className="text-[34px] font-semibold tracking-[-0.05em] text-[#111318]">
                         {
-                          step.number
+                          rounds.length
                         }
                       </div>
-  
-                      <div className="cf-stage-circle">
-  
-                        <Icon
-                          size={34}
-                          strokeWidth={
-                            1.7
-                          }
-                        />
-  
+
+                      <div className="mt-1 text-[12px] text-black/40">
+                        total rounds
                       </div>
-  
-                      <div className="cf-stage-copy">
-  
-                        <strong>
-                          {step.title}
-                        </strong>
-  
-                        <span>
-                          {step.short}
-                        </span>
-  
-                        <p>
-                          {
-                            step.description
-                          }
-                        </p>
-  
-                      </div>
-  
+
                     </div>
-                  );
-                }
-              )}
-  
-            </div>
-  
-            <div className="cf-process-footer">
-  
-              <div className="cf-process-footer-left">
-  
-                <ShieldCheck
-                  size={21}
+
+                  </>
+
+                ) : (
+
+                  <div className="flex h-full items-center justify-center">
+
+                    <div className="text-center">
+
+                      <div className="text-[31px] font-semibold">
+                        0
+                      </div>
+
+                      <div className="mt-1 text-[13px] text-black/40">
+                        No rounds yet
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                )}
+
+              </div>
+
+
+              <div className="mt-2 space-y-3">
+
+                {[
+                  [
+                    "Active",
+                    activeRounds.length,
+                    "bg-blue-600",
+                  ],
+                  [
+                    "Settled",
+                    settledRounds.length,
+                    "bg-green-600",
+                  ],
+                  [
+                    "Bidding",
+                    biddingRounds.length,
+                    "bg-violet-600",
+                  ],
+                  [
+                    "Challenge / dispute",
+                    challengeRounds.length,
+                    "bg-amber-500",
+                  ],
+                ].map(
+                  ([
+                    label,
+                    value,
+                    dot,
+                  ]) => (
+
+                    <div
+                      key={
+                        label
+                      }
+                      className="flex items-center justify-between gap-4"
+                    >
+
+                      <div className="flex items-center gap-2.5">
+
+                        <span
+                          className={`size-2 rounded-full ${dot}`}
+                        />
+
+                        <span className="text-[13px] text-black/55">
+                          {label}
+                        </span>
+
+                      </div>
+
+                      <span className="text-[14px] font-semibold">
+                        {value}
+                      </span>
+
+                    </div>
+
+                  )
+                )}
+
+              </div>
+
+            </CardContent>
+
+          </Card>
+
+        </section>
+
+
+        {/* =================================================
+            FINANCIAL SNAPSHOT
+        ================================================= */}
+
+        <Card className="rounded-[26px] border-black/[0.07] shadow-none">
+
+          <CardHeader className="px-6 pt-6 md:px-7">
+
+            <div className="flex items-center justify-between gap-5">
+
+              <div>
+
+                <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+                  Financial snapshot
+                </CardTitle>
+
+                <CardDescription className="mt-2 text-[14px]">
+                  Key values from your
+                  current ChitFlow portfolio.
+                </CardDescription>
+
+              </div>
+
+              <div className="hidden size-11 items-center justify-center rounded-2xl bg-[#f1f3f6] md:flex">
+
+                <IndianRupee
+                  size={19}
                 />
-  
-                <div>
-  
-                  <span>
-                    CONTROLLED WORKFLOW
-                  </span>
-  
-                  <strong>
-                    Each stage is
-                    validated before
-                    the round
-                    progresses.
-                  </strong>
-  
-                </div>
-  
+
               </div>
-  
-              <div className="cf-process-footer-right">
-                Important workflow
-                events remain
-                traceable through
-                ChitFlow's audit
-                history.
-              </div>
-  
+
             </div>
-  
-          </section>
-  
-        </main>
-  
-      </AppShell>
-    );
+
+          </CardHeader>
+
+          <CardContent className="grid gap-3 px-6 pb-6 sm:grid-cols-2 xl:grid-cols-4 md:px-7">
+
+            <SnapshotTile
+              label="Accessible value"
+              value={`₹${money(
+                totalPool
+              )}`}
+              description="Across all accessible groups"
+            />
+
+            <SnapshotTile
+              label="Managed value"
+              value={`₹${money(
+                managedPool
+              )}`}
+              description="Groups created by you"
+            />
+
+            <SnapshotTile
+              label="Avg. group value"
+              value={`₹${money(
+                averagePool
+              )}`}
+              description="Average configured pool"
+            />
+
+            <SnapshotTile
+              label="Avg. contribution"
+              value={`₹${money(
+                averageContribution
+              )}`}
+              description="Average configured contribution"
+            />
+
+          </CardContent>
+
+        </Card>
+
+
+        {/* =================================================
+            GROUP TABLE
+        ================================================= */}
+
+        <Card className="overflow-hidden rounded-[26px] border-black/[0.07] shadow-none">
+
+          <CardHeader className="flex flex-row items-center justify-between gap-6 space-y-0 px-6 py-6 md:px-7">
+
+            <div>
+
+              <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+                Current chit groups
+              </CardTitle>
+
+              <CardDescription className="mt-2 text-[14px]">
+                Financial circles available
+                to your account.
+              </CardDescription>
+
+            </div>
+
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={() =>
+                navigate(
+                  "/chit-groups"
+                )
+              }
+            >
+
+              View all
+
+              <ArrowRight
+                size={15}
+              />
+
+            </Button>
+
+          </CardHeader>
+
+
+          {visibleGroups.length ===
+          0 ? (
+
+            <CardContent className="px-6 pb-6">
+
+              <EmptyState
+                title="No chit groups yet"
+                description="Create your first group to begin managing members and rounds."
+              />
+
+            </CardContent>
+
+          ) : (
+
+            <div className="overflow-x-auto">
+
+              <table className="w-full border-collapse">
+
+                <thead>
+
+                  <tr className="border-y border-black/[0.06] bg-[#fafafa]">
+
+                    <th className="px-6 py-4 text-left text-[13px] font-medium text-black/45">
+                      Group
+                    </th>
+
+                    <th className="px-6 py-4 text-left text-[13px] font-medium text-black/45">
+                      Contribution
+                    </th>
+
+                    <th className="px-6 py-4 text-left text-[13px] font-medium text-black/45">
+                      Pool value
+                    </th>
+
+                    <th className="px-6 py-4 text-left text-[13px] font-medium text-black/45">
+                      Members
+                    </th>
+
+                    <th className="px-6 py-4 text-left text-[13px] font-medium text-black/45">
+                      Role
+                    </th>
+
+                    <th className="px-6 py-4" />
+
+                  </tr>
+
+                </thead>
+
+                <tbody>
+
+                  {visibleGroups.map(
+                    (group) => {
+
+                      const managed =
+                        Number(
+                          group.created_by
+                        ) ===
+                        Number(
+                          user?.user_id
+                        );
+
+                      return (
+                        <tr
+                          key={
+                            group.chit_id
+                          }
+                          className="border-b border-black/[0.06] transition hover:bg-[#fafcff]"
+                        >
+
+                          <td className="px-6 py-5">
+
+                            <div className="flex items-center gap-3">
+
+                              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#f0f3f8]">
+
+                                <WalletCards
+                                  size={18}
+                                />
+
+                              </div>
+
+                              <div>
+
+                                <div className="text-[15px] font-semibold">
+                                  {
+                                    group.name
+                                  }
+                                </div>
+
+                                <div className="mt-1 text-[12px] text-black/40">
+                                  Chit #
+                                  {
+                                    group.chit_id
+                                  }
+                                </div>
+
+                              </div>
+
+                            </div>
+
+                          </td>
+
+                          <td className="px-6 py-5 text-[14px] font-medium">
+                            ₹
+                            {money(
+                              group.contribution_amount
+                            )}
+                          </td>
+
+                          <td className="px-6 py-5 text-[14px] font-semibold">
+                            ₹
+                            {money(
+                              group.total_amount
+                            )}
+                          </td>
+
+                          <td className="px-6 py-5 text-[14px]">
+                            {
+                              group.number_of_members ||
+                              0
+                            }
+                          </td>
+
+                          <td className="px-6 py-5">
+
+                            <Badge
+                              variant={
+                                managed
+                                  ? "default"
+                                  : "secondary"
+                              }
+                              className="rounded-full px-3 py-1.5 text-[12px]"
+                            >
+                              {managed
+                                ? "Manager"
+                                : "Member"}
+                            </Badge>
+
+                          </td>
+
+                          <td className="px-6 py-5 text-right">
+
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="rounded-full"
+                              onClick={() =>
+                                navigate(
+                                  `/chits/${group.chit_id}`
+                                )
+                              }
+                            >
+
+                              <ArrowRight
+                                size={17}
+                              />
+
+                            </Button>
+
+                          </td>
+
+                        </tr>
+                      );
+                    }
+                  )}
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          )}
+
+        </Card>
+
+
+        {/* =================================================
+            RECENT ROUNDS
+        ================================================= */}
+
+        <section className="grid gap-5 xl:grid-cols-[.72fr_1.28fr]">
+
+          <Card className="rounded-[26px] border-black/[0.07] shadow-none">
+
+            <CardHeader className="px-6 pt-6">
+
+              <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+                Round activity
+              </CardTitle>
+
+              <CardDescription className="mt-2 text-[14px]">
+                Current operational status.
+              </CardDescription>
+
+            </CardHeader>
+
+            <CardContent className="grid grid-cols-2 gap-3 px-6 pb-6">
+
+              <ActivityTile
+                label="Total"
+                value={
+                  rounds.length
+                }
+              />
+
+              <ActivityTile
+                label="Active"
+                value={
+                  activeRounds.length
+                }
+              />
+
+              <ActivityTile
+                label="Bidding"
+                value={
+                  biddingRounds.length
+                }
+              />
+
+              <ActivityTile
+                label="Challenges"
+                value={
+                  challengeRounds.length
+                }
+                warning
+              />
+
+              <div className="col-span-2 rounded-2xl bg-[#111318] p-5 text-white">
+
+                <div className="flex items-center justify-between">
+
+                  <div>
+
+                    <div className="text-[13px] text-white/50">
+                      Settled rounds
+                    </div>
+
+                    <div className="mt-2 text-[31px] font-semibold tracking-[-0.05em] text-white">
+                      {
+                        settledRounds.length
+                      }
+                    </div>
+
+                  </div>
+
+                  <div className="flex size-11 items-center justify-center rounded-xl bg-white/10">
+
+                    <ShieldCheck
+                      size={20}
+                    />
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </CardContent>
+
+          </Card>
+
+
+          <Card className="rounded-[26px] border-black/[0.07] shadow-none">
+
+            <CardHeader className="px-6 pt-6">
+
+              <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+                Recent rounds
+              </CardTitle>
+
+              <CardDescription className="mt-2 text-[14px]">
+                Latest workflow activity
+                across your groups.
+              </CardDescription>
+
+            </CardHeader>
+
+            <CardContent className="px-6 pb-6">
+
+              {recentRounds.length ===
+              0 ? (
+
+                <EmptyState
+                  title="No rounds yet"
+                  description="Rounds will appear here after they are created."
+                />
+
+              ) : (
+
+                <div className="space-y-2.5">
+
+                  {recentRounds.map(
+                    (round) => {
+
+                      const state =
+                        getRoundState(
+                          round
+                        );
+
+                      return (
+                        <button
+                          key={
+                            round.round_id
+                          }
+                          type="button"
+                          onClick={() =>
+                            navigate(
+                              `/rounds/${round.round_id}`
+                            )
+                          }
+                          className="flex w-full items-center justify-between gap-5 rounded-2xl border border-black/[0.07] p-4 text-left transition hover:border-blue-200 hover:bg-blue-50/30"
+                        >
+
+                          <div className="flex min-w-0 items-center gap-4">
+
+                            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#f1f3f6]">
+
+                              <Gavel
+                                size={18}
+                              />
+
+                            </div>
+
+                            <div className="min-w-0">
+
+                              <div className="truncate text-[15px] font-semibold">
+                                {
+                                  round.groupName
+                                }
+                              </div>
+
+                              <div className="mt-1 text-[12px] text-black/40">
+                                Round #
+                                {
+                                  round.round_number
+                                }
+                              </div>
+
+                            </div>
+
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-3">
+
+                            <Badge
+                              variant="secondary"
+                              className="hidden rounded-full px-3 py-1.5 text-[11px] sm:inline-flex"
+                            >
+                              {
+                                readableState(
+                                  state
+                                )
+                              }
+                            </Badge>
+
+                            <ArrowRight
+                              size={16}
+                              className="text-black/35"
+                            />
+
+                          </div>
+
+                        </button>
+                      );
+                    }
+                  )}
+
+                </div>
+
+              )}
+
+            </CardContent>
+
+          </Card>
+
+        </section>
+
+
+        {/* =================================================
+            ORIGINAL-STYLE CHITFLOW CONSTELLATION
+        ================================================= */}
+
+        <section className="chitflow-dark overflow-hidden rounded-[30px] bg-[#0b0d12] px-6 py-8 text-white md:px-9 md:py-10">
+
+          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+
+            <div>
+
+              <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-blue-300">
+                ChitFlow lifecycle
+              </div>
+
+              <h2 className="mt-3 max-w-[620px] !text-white text-[31px] font-semibold tracking-[-0.05em] md:text-[40px]">
+                Follow the money from
+                joining to settlement.
+              </h2>
+
+            </div>
+
+            <p className="max-w-[430px] !text-white/50 text-[14px] leading-6">
+              Every round moves through a
+              controlled sequence. Your
+              backend validates each
+              transition before the next
+              financial action becomes
+              available.
+            </p>
+
+          </div>
+
+
+          {/* DESKTOP CONSTELLATION */}
+
+          <div className="relative mt-12 hidden h-[330px] md:block">
+
+            <svg
+              className="absolute inset-0 h-full w-full"
+              viewBox="0 0 1000 300"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+
+              <defs>
+
+                <linearGradient
+                  id="flow-gradient"
+                  x1="0"
+                  y1="0"
+                  x2="1"
+                  y2="0"
+                >
+
+                  <stop
+                    offset="0%"
+                    stopColor="#2563eb"
+                  />
+
+                  <stop
+                    offset="50%"
+                    stopColor="#7c3aed"
+                  />
+
+                  <stop
+                    offset="100%"
+                    stopColor="#60a5fa"
+                  />
+
+                </linearGradient>
+
+              </defs>
+
+              <path
+                d="M70 170 C140 170 155 70 225 70 C300 70 300 135 365 135 C430 135 435 235 500 235 C565 235 570 135 635 135 C700 135 700 70 775 70 C845 70 860 170 930 170"
+                fill="none"
+                stroke="rgba(255,255,255,0.09)"
+                strokeWidth="3"
+              />
+
+              <path
+                d="M70 170 C140 170 155 70 225 70 C300 70 300 135 365 135 C430 135 435 235 500 235 C565 235 570 135 635 135 C700 135 700 70 775 70 C845 70 860 170 930 170"
+                fill="none"
+                stroke="url(#flow-gradient)"
+                strokeWidth="2"
+                strokeDasharray="7 10"
+              />
+
+            </svg>
+
+
+            <FlowNode
+              left="7%"
+              top="57%"
+              number="01"
+              title="Join"
+              description="Become part of a chit group"
+            />
+
+            <FlowNode
+              left="22%"
+              top="23%"
+              number="02"
+              title="Contribute"
+              description="Submit the round contribution"
+            />
+
+            <FlowNode
+              left="36.5%"
+              top="45%"
+              number="03"
+              title="Verify"
+              description="Validate member payments"
+            />
+
+            <FlowNode
+              left="50%"
+              top="78%"
+              number="04"
+              title="Bid"
+              description="Eligible members participate"
+            />
+
+            <FlowNode
+              left="63.5%"
+              top="45%"
+              number="05"
+              title="Confirm"
+              description="Review and confirm the result"
+            />
+
+            <FlowNode
+              left="78%"
+              top="23%"
+              number="06"
+              title="Payout"
+              description="Process the winner payout"
+            />
+
+            <FlowNode
+              left="93%"
+              top="57%"
+              number="07"
+              title="Settle"
+              description="Complete and close the round"
+            />
+
+          </div>
+
+
+          {/* MOBILE FLOW */}
+
+          <div className="mt-8 grid gap-3 md:hidden">
+
+            {[
+              [
+                "01",
+                "Join",
+                "Become part of a chit group",
+              ],
+              [
+                "02",
+                "Contribute",
+                "Submit the round contribution",
+              ],
+              [
+                "03",
+                "Verify",
+                "Validate member payments",
+              ],
+              [
+                "04",
+                "Bid",
+                "Eligible members participate",
+              ],
+              [
+                "05",
+                "Confirm",
+                "Review and confirm the result",
+              ],
+              [
+                "06",
+                "Payout",
+                "Process the winner payout",
+              ],
+              [
+                "07",
+                "Settle",
+                "Complete and close the round",
+              ],
+            ].map(
+              ([
+                number,
+                title,
+                description,
+              ]) => (
+
+                <div
+                  key={
+                    number
+                  }
+                  className="flex items-center gap-4 rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4"
+                >
+
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-full border border-blue-400/30 bg-blue-500/10 text-[12px] font-semibold text-blue-300">
+                    {number}
+                  </div>
+
+                  <div>
+
+                    <div className="text-[15px] font-semibold text-white">
+                      {title}
+                    </div>
+
+                    <div className="mt-1 text-[12px] text-white/45">
+                      {description}
+                    </div>
+
+                  </div>
+
+                </div>
+
+              )
+            )}
+
+          </div>
+
+        </section>
+
+      </main>
+
+    </AppShell>
+  );
+}
+
+
+/* =========================================================
+   UI COMPONENTS
+========================================================= */
+
+function HeroMiniMetric({
+  label,
+  value,
+}) {
+  return (
+    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.04] p-4">
+
+      <div className="text-[12px] text-white/40">
+        {label}
+      </div>
+
+      <div className="mt-2 text-[21px] font-semibold tracking-[-0.035em] text-white">
+        {value}
+      </div>
+
+    </div>
+  );
+}
+
+
+function MoneyCard({
+  icon: Icon,
+  eyebrow,
+  label,
+  value,
+  note,
+  progress,
+  neutralProgress = false,
+}) {
+  return (
+    <Card className="rounded-[23px] border-black/[0.07] shadow-none">
+
+      <CardContent className="p-5">
+
+        <div className="flex items-center justify-between">
+
+          <div className="flex size-11 items-center justify-center rounded-xl bg-[#f1f3f6]">
+            <Icon
+              size={19}
+            />
+          </div>
+
+          <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-black/35">
+            {eyebrow}
+          </span>
+
+        </div>
+
+        <div className="mt-6 text-[13px] text-black/45">
+          {label}
+        </div>
+
+        <div className="mt-1 text-[28px] font-semibold tracking-[-0.05em] text-[#111318]">
+          {value}
+        </div>
+
+        <div className="mt-2 min-h-[20px] text-[12px] text-black/40">
+          {note}
+        </div>
+
+        <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-[#edf0f3]">
+
+          <div
+            className={
+              neutralProgress
+                ? "h-full rounded-full bg-[#a6adba]"
+                : "h-full rounded-full bg-blue-600"
+            }
+            style={{
+              width:
+                `${Math.max(
+                  0,
+                  Math.min(
+                    100,
+                    progress
+                  )
+                )}%`,
+            }}
+          />
+
+        </div>
+
+      </CardContent>
+
+    </Card>
+  );
+}
+
+
+function SnapshotTile({
+  label,
+  value,
+  description,
+}) {
+  return (
+    <div className="rounded-2xl bg-[#f6f7f9] p-5">
+
+      <div className="text-[13px] text-black/45">
+        {label}
+      </div>
+
+      <div className="mt-3 text-[25px] font-semibold tracking-[-0.045em]">
+        {value}
+      </div>
+
+      <div className="mt-2 text-[12px] leading-5 text-black/40">
+        {description}
+      </div>
+
+    </div>
+  );
+}
+
+
+function ActivityTile({
+  label,
+  value,
+  warning = false,
+}) {
+  return (
+    <div
+      className={
+        warning
+          ? "rounded-2xl border border-amber-200 bg-amber-50 p-4"
+          : "rounded-2xl border border-black/[0.06] bg-[#fafafa] p-4"
+      }
+    >
+
+      <div
+        className={
+          warning
+            ? "text-[13px] text-amber-700/70"
+            : "text-[13px] text-black/45"
+        }
+      >
+        {label}
+      </div>
+
+      <div
+        className={
+          warning
+            ? "mt-3 text-[28px] font-semibold tracking-[-0.045em] text-amber-800"
+            : "mt-3 text-[28px] font-semibold tracking-[-0.045em]"
+        }
+      >
+        {value}
+      </div>
+
+    </div>
+  );
+}
+
+
+function FlowNode({
+  left,
+  top,
+  number,
+  title,
+  description,
+}) {
+  return (
+    <div
+      className="absolute z-10 w-[150px] -translate-x-1/2 -translate-y-1/2 text-center"
+      style={{
+        left,
+        top,
+      }}
+    >
+
+      <div className="mx-auto flex size-[58px] items-center justify-center rounded-full border border-blue-400/40 bg-[#111722] shadow-[0_0_30px_rgba(37,99,235,0.18)]">
+
+        <div className="flex size-[42px] items-center justify-center rounded-full bg-blue-500/10 text-[12px] font-semibold text-blue-300">
+          {number}
+        </div>
+
+      </div>
+
+      <div className="mt-3 text-[14px] font-semibold text-white">
+        {title}
+      </div>
+
+      <div className="mx-auto mt-1 max-w-[145px] text-[11px] leading-4 text-white/40">
+        {description}
+      </div>
+
+    </div>
+  );
+}
+
+
+function MoneyChartTooltip({
+  active,
+  payload,
+}) {
+  if (
+    !active ||
+    !payload?.length
+  ) {
+    return null;
   }
-  
-  export default Dashboard;
+
+  const item =
+    payload[0]
+      ?.payload;
+
+  return (
+    <div className="rounded-xl border border-black/[0.08] bg-white px-4 py-3 shadow-xl">
+
+      <div className="text-[13px] font-semibold text-[#111318]">
+        {item?.fullName}
+      </div>
+
+      <div className="mt-1 text-[12px] text-black/45">
+        Pool value
+      </div>
+
+      <div className="mt-1 text-[15px] font-semibold text-blue-600">
+        ₹
+        {Number(
+          item?.pool ||
+            0
+        ).toLocaleString(
+          "en-IN"
+        )}
+      </div>
+
+      <div className="mt-2 text-[11px] text-black/40">
+        Contribution: ₹
+        {Number(
+          item?.contribution ||
+            0
+        ).toLocaleString(
+          "en-IN"
+        )}
+      </div>
+
+    </div>
+  );
+}
+
+
+function RoundTooltip({
+  active,
+  payload,
+}) {
+  if (
+    !active ||
+    !payload?.length
+  ) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-xl border border-black/[0.08] bg-white px-4 py-3 shadow-xl">
+
+      <div className="text-[13px] font-semibold">
+        {
+          payload[0]
+            ?.name
+        }
+      </div>
+
+      <div className="mt-1 text-[12px] text-black/45">
+        {
+          payload[0]
+            ?.value
+        }{" "}
+        round(s)
+      </div>
+
+    </div>
+  );
+}
+
+
+function EmptyState({
+  title,
+  description,
+}) {
+  return (
+    <div className="rounded-2xl border border-dashed border-black/10 bg-[#fafafa] px-6 py-10 text-center">
+
+      <div className="text-[16px] font-semibold">
+        {title}
+      </div>
+
+      <p className="mx-auto mt-2 max-w-[440px] text-[14px] leading-6 text-black/45">
+        {description}
+      </p>
+
+    </div>
+  );
+}
+
+function DashboardFinanceTooltip({
+  active,
+  payload,
+}) {
+  if (
+    !active ||
+    !payload?.length
+  ) {
+    return null;
+  }
+
+  const item =
+    payload[0]?.payload;
+
+  return (
+    <div className="min-w-[190px] rounded-2xl border border-black/[0.08] bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.14)]">
+
+      <div className="text-[14px] font-semibold text-[#111318]">
+        {item?.fullName}
+      </div>
+
+
+      <div className="mt-4 space-y-3">
+
+        <div className="flex items-center justify-between gap-5">
+
+          <div className="flex items-center gap-2">
+
+            <span className="size-2 rounded-full bg-blue-600" />
+
+            <span className="text-[11px] text-black/45">
+              Pool
+            </span>
+
+          </div>
+
+          <span className="text-[13px] font-semibold">
+            ₹
+            {Number(
+              item?.pool || 0
+            ).toLocaleString(
+              "en-IN"
+            )}
+          </span>
+
+        </div>
+
+
+        <div className="flex items-center justify-between gap-5">
+
+          <div className="flex items-center gap-2">
+
+            <span className="size-2 rounded-full bg-violet-600" />
+
+            <span className="text-[11px] text-black/45">
+              Contribution
+            </span>
+
+          </div>
+
+          <span className="text-[13px] font-semibold">
+            ₹
+            {Number(
+              item?.contribution || 0
+            ).toLocaleString(
+              "en-IN"
+            )}
+          </span>
+
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
+
+export default Dashboard;

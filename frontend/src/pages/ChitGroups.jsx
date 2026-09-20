@@ -1,2210 +1,1439 @@
 import {
-    ArrowRight,
-    Coins,
-    Crown,
-    Plus,
-    Search,
-    ShieldCheck,
-    Users,
-    WalletCards,
-    X,
-  } from "lucide-react";
-  
-  import {
-    useEffect,
-    useMemo,
-    useState,
-  } from "react";
-  
-  import {
-    useNavigate,
-  } from "react-router-dom";
-  
-  import api from "../api/api";
-  import AppShell from "../components/AppShell";
-  
-  function ChitGroups() {
-    const navigate =
-      useNavigate();
-  
-    const [
-      user,
-      setUser,
-    ] = useState(null);
-  
-    const [
-      groups,
-      setGroups,
-    ] = useState([]);
-  
-    const [
-      loading,
-      setLoading,
-    ] = useState(true);
-  
-    const [
-      error,
-      setError,
-    ] = useState("");
-  
-    const [
-      search,
-      setSearch,
-    ] = useState("");
-  
-    const [
-      showCreate,
-      setShowCreate,
-    ] = useState(false);
-  
-    /* =====================================================
-       CREATE GROUP
-    ===================================================== */
-  
-    const [
-      groupName,
-      setGroupName,
-    ] = useState("");
-  
-    const [
-      contributionAmount,
-      setContributionAmount,
-    ] = useState("");
-  
-    const [
-      memberCount,
-      setMemberCount,
-    ] = useState("");
-  
-    const [
-      duration,
-      setDuration,
-    ] = useState("");
-  
-    const [
-      creating,
-      setCreating,
-    ] = useState(false);
-  
-    const [
-      createMessage,
-      setCreateMessage,
-    ] = useState("");
-  
-    /* =====================================================
-       LOAD DATA
-    ===================================================== */
-  
-    const loadGroups =
-      async () => {
-        try {
-          setLoading(true);
-  
-          const [
-            userResponse,
-            groupsResponse,
-          ] = await Promise.all([
-            api.get(
-              "/users/me"
-            ),
-  
-            api.get(
-              "/chit-groups/"
-            ),
-          ]);
-  
-          setUser(
-            userResponse.data
+  ArrowRight,
+  CircleDollarSign,
+  Crown,
+  IndianRupee,
+  Plus,
+  Search,
+  Users,
+  WalletCards,
+  X,
+} from "lucide-react";
+
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+
+import api from "@/api/api";
+
+import AppShell from "@/components/AppShell";
+
+import {
+  Badge,
+} from "@/components/ui/badge";
+
+import {
+  Button,
+} from "@/components/ui/button";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+import {
+  Input,
+} from "@/components/ui/input";
+
+import {
+  Label,
+} from "@/components/ui/label";
+
+
+function ChitGroups() {
+  const navigate =
+    useNavigate();
+
+  const [
+    user,
+    setUser,
+  ] = useState(null);
+
+  const [
+    groups,
+    setGroups,
+  ] = useState([]);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+
+  const [
+    createOpen,
+    setCreateOpen,
+  ] = useState(false);
+
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
+
+
+  /* =====================================================
+     FORM
+  ===================================================== */
+
+  const [
+    groupName,
+    setGroupName,
+  ] = useState("");
+
+  const [
+    contribution,
+    setContribution,
+  ] = useState("");
+
+  const [
+    members,
+    setMembers,
+  ] = useState("");
+
+  const [
+    months,
+    setMonths,
+  ] = useState("");
+
+
+  /* =====================================================
+     LOAD
+  ===================================================== */
+
+  const loadData =
+    async () => {
+      try {
+        setLoading(true);
+
+        const [
+          userResponse,
+          groupsResponse,
+        ] = await Promise.all([
+          api.get(
+            "/users/me"
+          ),
+
+          api.get(
+            "/chit-groups/"
+          ),
+        ]);
+
+        setUser(
+          userResponse.data
+        );
+
+        setGroups(
+          groupsResponse.data ||
+          []
+        );
+
+        setError("");
+      } catch (error) {
+        const status =
+          error.response?.status;
+
+        if (
+          status === 401 ||
+          status === 403
+        ) {
+          localStorage.removeItem(
+            "token"
           );
-  
-          setGroups(
-            groupsResponse.data ||
-              []
+
+          navigate(
+            "/login"
           );
-  
-          setError("");
-        } catch (error) {
-          if (
-            error.response
-              ?.status ===
-            401
-          ) {
-            localStorage.removeItem(
-              "token"
-            );
-  
-            navigate("/");
-          } else {
-            setError(
-              error.response
-                ?.data
-                ?.detail ||
-                "Unable to load chit groups"
-            );
-          }
-        } finally {
-          setLoading(false);
+
+          return;
         }
-      };
-  
-    useEffect(() => {
-      loadGroups();
-    }, []);
-  
-    /* =====================================================
-       DERIVED VALUES
-    ===================================================== */
-  
-    const calculatedPool =
+
+        setError(
+          error.response
+            ?.data
+            ?.detail ||
+            error.message ||
+            "Unable to load chit groups."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+
+  /* =====================================================
+     HELPERS
+  ===================================================== */
+
+  const money =
+    (value) =>
       Number(
-        contributionAmount ||
-          0
-      ) *
-      Number(
-        memberCount ||
-          0
+        value || 0
+      ).toLocaleString(
+        "en-IN"
       );
-  
-    const managedGroups =
-      groups.filter(
+
+
+  const shortMoney =
+    (value) => {
+      const amount =
+        Number(
+          value || 0
+        );
+
+      if (
+        amount >=
+        10000000
+      ) {
+        return `₹${(
+          amount /
+          10000000
+        ).toFixed(1)}Cr`;
+      }
+
+      if (
+        amount >=
+        100000
+      ) {
+        return `₹${(
+          amount /
+          100000
+        ).toFixed(1)}L`;
+      }
+
+      if (
+        amount >=
+        1000
+      ) {
+        return `₹${(
+          amount /
+          1000
+        ).toFixed(1)}K`;
+      }
+
+      return `₹${money(
+        amount
+      )}`;
+    };
+
+
+  /* =====================================================
+     METRICS
+  ===================================================== */
+
+  const managedGroups =
+    useMemo(
+      () =>
+        groups.filter(
+          (group) =>
+            Number(
+              group.created_by
+            ) ===
+            Number(
+              user?.user_id
+            )
+        ),
+      [
+        groups,
+        user,
+      ]
+    );
+
+
+  const totalPool =
+    useMemo(
+      () =>
+        groups.reduce(
+          (sum, group) =>
+            sum +
+            Number(
+              group.total_amount ||
+                0
+            ),
+          0
+        ),
+      [groups]
+    );
+
+
+  const totalContribution =
+    useMemo(
+      () =>
+        groups.reduce(
+          (sum, group) =>
+            sum +
+            Number(
+              group.contribution_amount ||
+                0
+            ),
+          0
+        ),
+      [groups]
+    );
+
+
+  const memberCapacity =
+    useMemo(
+      () =>
+        groups.reduce(
+          (sum, group) =>
+            sum +
+            Number(
+              group.number_of_members ||
+                0
+            ),
+          0
+        ),
+      [groups]
+    );
+
+
+  const averagePool =
+    groups.length
+      ? totalPool /
+        groups.length
+      : 0;
+
+
+  /* =====================================================
+     SEARCH
+  ===================================================== */
+
+  const filteredGroups =
+    useMemo(() => {
+      const query =
+        search
+          .trim()
+          .toLowerCase();
+
+      if (!query) {
+        return groups;
+      }
+
+      return groups.filter(
         (group) =>
-          Number(
-            group.created_by
-          ) ===
-          Number(
-            user?.user_id
+          String(
+            group.name ||
+              ""
+          )
+            .toLowerCase()
+            .includes(
+              query
+            ) ||
+          String(
+            group.chit_id ||
+              ""
+          ).includes(
+            query
           )
       );
-  
-    const totalPool =
-      groups.reduce(
-        (sum, group) =>
-          sum +
-          Number(
-            group.total_amount ||
-              0
+    }, [
+      groups,
+      search,
+    ]);
+
+
+  /* =====================================================
+     CHART
+  ===================================================== */
+
+  const chartData =
+    useMemo(
+      () =>
+        [...groups]
+          .sort(
+            (a, b) =>
+              Number(
+                b.total_amount ||
+                  0
+              ) -
+              Number(
+                a.total_amount ||
+                  0
+              )
+          )
+          .map(
+            (group) => ({
+              name:
+                group.name?.length >
+                16
+                  ? `${group.name.slice(
+                      0,
+                      16
+                    )}…`
+                  : group.name,
+
+              fullName:
+                group.name,
+
+              pool:
+                Number(
+                  group.total_amount ||
+                    0
+                ),
+
+              contribution:
+                Number(
+                  group.contribution_amount ||
+                    0
+                ),
+            })
           ),
-        0
-      );
-  
-    const totalCapacity =
-      groups.reduce(
-        (sum, group) =>
-          sum +
-          Number(
-            group.number_of_members ||
-              0
-          ),
-        0
-      );
-  
-    const filteredGroups =
-      useMemo(() => {
-        const query =
-          search
-            .trim()
-            .toLowerCase();
-  
-        if (!query) {
-          return groups;
-        }
-  
-        return groups.filter(
-          (group) =>
-            group.name
-              ?.toLowerCase()
-              .includes(query) ||
-            String(
-              group.chit_id
-            ).includes(query) ||
-            group.status
-              ?.toLowerCase()
-              .includes(query)
+      [groups]
+    );
+
+
+  /* =====================================================
+     CREATE
+  ===================================================== */
+
+  const createGroup =
+    async (
+      event
+    ) => {
+      event.preventDefault();
+
+      if (
+        !groupName.trim() ||
+        !contribution ||
+        !members ||
+        !months
+      ) {
+        setError(
+          "Please complete all group fields."
         );
-      }, [
-        groups,
-        search,
-      ]);
-  
-    /* =====================================================
-       CREATE GROUP
-    ===================================================== */
-  
-    const handleCreateGroup =
-      async (e) => {
-        e.preventDefault();
-  
-        setCreateMessage("");
-  
-        const contribution =
-          Number(
-            contributionAmount
+
+        return;
+      }
+
+      try {
+        setSubmitting(true);
+
+        const response =
+          await api.post(
+            "/chit-groups/",
+            {
+              name:
+                groupName.trim(),
+
+              contribution_amount:
+                Number(
+                  contribution
+                ),
+
+              total_amount:
+                Number(
+                  contribution
+                ) *
+                Number(
+                  members
+                ),
+
+              number_of_members:
+                Number(
+                  members
+                ),
+
+              duration:
+                Number(
+                  months
+                ),
+            }
           );
-  
-        const members =
-          Number(
-            memberCount
+
+        setGroupName("");
+        setContribution("");
+        setMembers("");
+        setMonths("");
+        setError("");
+
+        const chitId =
+          response.data
+            ?.chit_id;
+
+        if (chitId) {
+          navigate(
+            `/chits/${chitId}`
           );
-  
-        const months =
-          Number(
-            duration
-          );
-  
-        if (
-          !groupName.trim()
-        ) {
-          setCreateMessage(
-            "Enter a group name."
-          );
-  
+
           return;
         }
-  
-        if (
-          contribution <= 0
-        ) {
-          setCreateMessage(
-            "Contribution amount must be greater than zero."
-          );
-  
-          return;
-        }
-  
-        if (
-          members < 2
-        ) {
-          setCreateMessage(
-            "A chit group needs at least 2 members."
-          );
-  
-          return;
-        }
-  
-        if (
-          months <= 0
-        ) {
-          setCreateMessage(
-            "Duration must be greater than zero."
-          );
-  
-          return;
-        }
-  
-        setCreating(true);
-  
-        try {
-          const response =
-            await api.post(
-              "/chit-groups/",
-              {
-                name:
-                  groupName.trim(),
-  
-                contribution_amount:
-                  contribution,
-  
-                total_amount:
-                  contribution *
-                  members,
-  
-                number_of_members:
-                  members,
-  
-                duration:
-                  months,
-              }
-            );
-  
-          setGroupName("");
-          setContributionAmount("");
-          setMemberCount("");
-          setDuration("");
-  
-          setCreateMessage(
-            "Chit group created successfully."
-          );
-  
-          await loadGroups();
-  
-          if (
-            response.data
-              ?.chit_id
-          ) {
-            navigate(
-              `/chits/${response.data.chit_id}`
-            );
-          }
-        } catch (error) {
-          setCreateMessage(
-            error.response
-              ?.data
-              ?.detail ||
-              "Unable to create chit group"
-          );
-        } finally {
-          setCreating(false);
-        }
-      };
-  
-    /* =====================================================
-       FORMAT
-    ===================================================== */
-  
-    const money =
-      (value) =>
-        Number(
-          value ||
-            0
-        ).toLocaleString(
-          "en-IN"
+
+        setCreateOpen(
+          false
         );
-  
-    if (loading) {
-      return (
-        <div className="auth-page">
-          Loading chit groups...
-        </div>
-      );
-    }
-  
+
+        await loadData();
+      } catch (error) {
+        setError(
+          error.response
+            ?.data
+            ?.detail ||
+            "Unable to create chit group."
+        );
+      } finally {
+        setSubmitting(false);
+      }
+    };
+
+
+  if (loading) {
     return (
-      <AppShell
-        user={user}
-        active="chits"
-      >
-  
-        <style>{`
-  
-          /* =================================================
-             PAGE HEADER
-          ================================================= */
-  
-          .groups-page-header {
-            display: flex;
-  
-            align-items:
-              flex-end;
-  
-            justify-content:
-              space-between;
-  
-            gap: 24px;
-          }
-  
-          .groups-page-header
-          .page-heading {
-            margin-bottom: 0;
-          }
-  
-          .groups-create-button {
-            min-height: 47px;
-  
-            padding:
-              0 18px;
-  
-            display:
-              inline-flex;
-  
-            align-items:
-              center;
-  
-            justify-content:
-              center;
-  
-            gap: 8px;
-  
-            border: none;
-  
-            border-radius:
-              13px;
-  
-            background:
-              linear-gradient(
-                135deg,
-                #1aaa80,
-                #0b765a
-              );
-  
-            color: white;
-  
-            font-size:
-              13px !important;
-  
-            font-weight: 700;
-  
-            cursor: pointer;
-  
-            box-shadow:
-              0 11px 26px
-              rgba(
-                15,
-                132,
-                99,
-                0.18
-              );
-  
-            transition:
-              0.2s ease;
-          }
-  
-          .groups-create-button:hover {
-            transform:
-              translateY(-2px);
-          }
-  
-          /* =================================================
-             HERO
-          ================================================= */
-  
-          .groups-hero {
-            position: relative;
-  
-            overflow: hidden;
-  
-            min-height: 235px;
-  
-            margin-top: 24px;
-  
-            padding: 36px;
-  
-            display: flex;
-  
-            align-items: center;
-  
-            border-radius: 30px;
-  
-            background:
-              radial-gradient(
-                circle at 85% 20%,
-                rgba(
-                  88,
-                  225,
-                  184,
-                  0.22
-                ),
-                transparent 25%
-              ),
-              radial-gradient(
-                circle at 70% 120%,
-                rgba(
-                  50,
-                  170,
-                  198,
-                  0.14
-                ),
-                transparent 35%
-              ),
-              linear-gradient(
-                140deg,
-                #0a3039,
-                #071e27
-              );
-  
-            color: white;
-  
-            box-shadow:
-              0 22px 55px
-              rgba(
-                8,
-                34,
-                43,
-                0.14
-              );
-          }
-  
-          .groups-hero::after {
-            content: "";
-  
-            position: absolute;
-  
-            width: 330px;
-            height: 330px;
-  
-            right: -110px;
-            top: -160px;
-  
-            border:
-              1px solid
-              rgba(
-                255,
-                255,
-                255,
-                0.06
-              );
-  
-            border-radius: 50%;
-          }
-  
-          .groups-hero-copy {
-            position: relative;
-  
-            z-index: 2;
-  
-            max-width: 670px;
-          }
-  
-          .groups-eyebrow {
-            font-family:
-              var(
-                --font-mono,
-                "Space Mono",
-                monospace
-              );
-  
-            color:
-              #67dfba;
-  
-            font-size:
-              11px;
-  
-            font-weight: 700;
-  
-            letter-spacing:
-              0.12em;
-          }
-  
-          .groups-hero h2 {
-            max-width: 620px;
-  
-            margin:
-              14px 0 0;
-  
-            color: white;
-  
-            font-size:
-              clamp(
-                35px,
-                4vw,
-                50px
-              );
-  
-            line-height: 1;
-  
-            letter-spacing:
-              -0.05em;
-          }
-  
-          .groups-hero p {
-            max-width: 580px;
-  
-            margin:
-              14px 0 0;
-  
-            color:
-              #96b1b7;
-  
-            font-size:
-              15px;
-  
-            line-height: 1.7;
-          }
-  
-          /* =================================================
-             STATS
-          ================================================= */
-  
-          .groups-stats {
-            margin-top: 22px;
-  
-            display: grid;
-  
-            grid-template-columns:
-              repeat(
-                4,
-                minmax(
-                  0,
-                  1fr
-                )
-              );
-  
-            gap: 13px;
-          }
-  
-          .groups-stat {
-            min-height: 115px;
-  
-            padding: 19px;
-  
-            display: flex;
-  
-            align-items: center;
-  
-            gap: 13px;
-  
-            border:
-              1px solid
-              var(--border);
-  
-            border-radius: 19px;
-  
-            background: white;
-  
-            box-shadow:
-              var(--shadow);
-          }
-  
-          .groups-stat-icon {
-            width: 46px;
-            height: 46px;
-  
-            display: grid;
-  
-            place-items: center;
-  
-            flex: 0 0 auto;
-  
-            border-radius: 14px;
-  
-            background:
-              var(--green-light);
-  
-            color:
-              var(--green-dark);
-          }
-  
-          .groups-stat strong {
-            display: block;
-  
-            font-family:
-              var(
-                --font-mono,
-                "Space Mono",
-                monospace
-              );
-  
-            color: #173139;
-  
-            font-size: 22px;
-          }
-  
-          .groups-stat span {
-            display: block;
-  
-            margin-top: 4px;
-  
-            color:
-              var(--muted);
-  
-            font-size: 12px;
-          }
-  
-          /* =================================================
-             CREATE PANEL
-          ================================================= */
-  
-          .groups-create-panel {
-            margin-top: 22px;
-  
-            padding: 25px;
-  
-            border:
-              1px solid
-              #d4e7e1;
-  
-            border-radius: 23px;
-  
-            background:
-              linear-gradient(
-                145deg,
-                #f2faf7,
-                white
-              );
-          }
-  
-          .groups-create-header {
-            display: flex;
-  
-            align-items:
-              center;
-  
-            justify-content:
-              space-between;
-  
-            gap: 20px;
-  
-            margin-bottom: 21px;
-          }
-  
-          .groups-create-header h3 {
-            margin: 0;
-  
-            color: #173139;
-  
-            font-size: 19px;
-          }
-  
-          .groups-create-header p {
-            margin:
-              5px 0 0;
-  
-            color:
-              var(--muted);
-  
-            font-size: 13px;
-          }
-  
-          .groups-close-button {
-            width: 40px;
-            height: 40px;
-  
-            display: grid;
-  
-            place-items: center;
-  
-            border:
-              1px solid
-              #dce5e7;
-  
-            border-radius: 11px;
-  
-            background: white;
-  
-            color: #64787e;
-  
-            cursor: pointer;
-          }
-  
-          .groups-form {
-            display: grid;
-  
-            grid-template-columns:
-              repeat(
-                2,
-                minmax(
-                  0,
-                  1fr
-                )
-              );
-  
-            gap: 15px;
-          }
-  
-          .groups-field {
-            display: flex;
-  
-            flex-direction:
-              column;
-  
-            gap: 8px;
-          }
-  
-          .groups-field span {
-            font-family:
-              var(
-                --font-mono,
-                "Space Mono",
-                monospace
-              );
-  
-            color:
-              #61767c;
-  
-            font-size:
-              11px !important;
-  
-            font-weight: 700;
-          }
-  
-          .groups-field input {
-            width: 100%;
-  
-            height: 48px;
-  
-            padding:
-              0 13px;
-  
-            border:
-              1px solid
-              #d8e3e5;
-  
-            border-radius:
-              12px;
-  
-            background: white;
-  
-            color:
-              #183139;
-  
-            font-size:
-              15px !important;
-  
-            outline: none;
-          }
-  
-          .groups-field input:focus {
-            border-color:
-              #64bea3;
-  
-            box-shadow:
-              0 0 0 4px
-              rgba(
-                25,
-                158,
-                119,
-                0.08
-              );
-          }
-  
-          .groups-pool-preview {
-            grid-column:
-              1 / -1;
-  
-            padding: 17px;
-  
-            display: flex;
-  
-            align-items:
-              center;
-  
-            justify-content:
-              space-between;
-  
-            gap: 20px;
-  
-            border:
-              1px solid
-              #d9e8e4;
-  
-            border-radius: 15px;
-  
-            background: white;
-          }
-  
-          .groups-pool-preview
-          span {
-            color:
-              var(--muted);
-  
-            font-size: 13px;
-          }
-  
-          .groups-pool-preview
-          strong {
-            font-family:
-              var(
-                --font-mono,
-                "Space Mono",
-                monospace
-              );
-  
-            color:
-              #087659;
-  
-            font-size: 22px;
-          }
-  
-          .groups-form-actions {
-            grid-column:
-              1 / -1;
-  
-            display: flex;
-  
-            justify-content:
-              flex-end;
-          }
-  
-          /* =================================================
-             DIRECTORY
-          ================================================= */
-  
-          .groups-directory {
-            margin-top: 22px;
-  
-            padding: 26px;
-  
-            border:
-              1px solid
-              var(--border);
-  
-            border-radius: 26px;
-  
-            background: white;
-  
-            box-shadow:
-              var(--shadow);
-          }
-  
-          .groups-directory-header {
-            display: flex;
-  
-            align-items: center;
-  
-            justify-content:
-              space-between;
-  
-            gap: 20px;
-          }
-  
-          .groups-title {
-            display: flex;
-  
-            align-items: center;
-  
-            gap: 12px;
-          }
-  
-          .groups-title-icon {
-            width: 45px;
-            height: 45px;
-  
-            display: grid;
-  
-            place-items: center;
-  
-            border-radius: 14px;
-  
-            background:
-              var(--green-light);
-  
-            color:
-              var(--green-dark);
-          }
-  
-          .groups-title h2 {
-            margin: 0;
-  
-            color: #173139;
-  
-            font-size: 20px;
-          }
-  
-          .groups-title p {
-            margin:
-              5px 0 0;
-  
-            color:
-              var(--muted);
-  
-            font-size: 13px;
-          }
-  
-          /* =================================================
-             SEARCH
-          ================================================= */
-  
-          .groups-search {
-            position: relative;
-  
-            width: min(
-              320px,
-              100%
-            );
-          }
-  
-          .groups-search svg {
-            position: absolute;
-  
-            left: 13px;
-  
-            top: 50%;
-  
-            transform:
-              translateY(-50%);
-  
-            color:
-              #809196;
-          }
-  
-          .groups-search input {
-            width: 100%;
-  
-            height: 45px;
-  
-            padding:
-              0 13px
-              0 41px;
-  
-            border:
-              1px solid
-              #dce5e7;
-  
-            border-radius: 12px;
-  
-            background:
-              #fafcfc;
-  
-            color:
-              #173139;
-  
-            font-size:
-              14px !important;
-  
-            outline: none;
-          }
-  
-          /* =================================================
-             GROUP GRID
-          ================================================= */
-  
-          .groups-grid {
-            margin-top: 22px;
-  
-            display: grid;
-  
-            grid-template-columns:
-              repeat(
-                2,
-                minmax(
-                  0,
-                  1fr
-                )
-              );
-  
-            gap: 15px;
-          }
-  
-          .group-card {
-            position: relative;
-  
-            overflow: hidden;
-  
-            min-height: 245px;
-  
-            padding: 22px;
-  
-            display: flex;
-  
-            flex-direction:
-              column;
-  
-            border:
-              1px solid
-              var(--border);
-  
-            border-radius: 21px;
-  
-            background:
-              linear-gradient(
-                145deg,
-                #ffffff,
-                #fbfdfd
-              );
-  
-            transition:
-              0.2s ease;
-          }
-  
-          .group-card:hover {
-            transform:
-              translateY(-3px);
-  
-            border-color:
-              #c5ded7;
-  
-            box-shadow:
-              0 14px 34px
-              rgba(
-                15,
-                43,
-                52,
-                0.08
-              );
-          }
-  
-          .group-card::after {
-            content: "";
-  
-            position: absolute;
-  
-            width: 130px;
-            height: 130px;
-  
-            right: -55px;
-            top: -55px;
-  
-            border:
-              1px solid
-              #edf3f1;
-  
-            border-radius: 50%;
-          }
-  
-          .group-card-top {
-            position: relative;
-  
-            z-index: 2;
-  
-            display: flex;
-  
-            align-items:
-              flex-start;
-  
-            justify-content:
-              space-between;
-  
-            gap: 14px;
-          }
-  
-          .group-card-icon {
-            width: 47px;
-            height: 47px;
-  
-            display: grid;
-  
-            place-items: center;
-  
-            border-radius: 15px;
-  
-            background:
-              var(--green-light);
-  
-            color:
-              var(--green-dark);
-          }
-  
-          .group-card-tags {
-            display: flex;
-  
-            align-items: center;
-  
-            flex-wrap: wrap;
-  
-            justify-content:
-              flex-end;
-  
-            gap: 7px;
-          }
-  
-          .group-managed {
-            padding:
-              6px 9px;
-  
-            display:
-              inline-flex;
-  
-            align-items: center;
-  
-            gap: 5px;
-  
-            border-radius:
-              999px;
-  
-            background:
-              #fff7df;
-  
-            color:
-              #8c6815;
-  
-            font-family:
-              var(
-                --font-mono,
-                "Space Mono",
-                monospace
-              );
-  
-            font-size: 10px;
-  
-            font-weight: 700;
-          }
-  
-          .group-card h3 {
-            margin:
-              18px 0 0;
-  
-            color: #173139;
-  
-            font-size: 21px;
-  
-            letter-spacing:
-              -0.025em;
-          }
-  
-          .group-card-id {
-            margin-top: 5px;
-  
-            color:
-              #87969b;
-  
-            font-family:
-              var(
-                --font-mono,
-                "Space Mono",
-                monospace
-              );
-  
-            font-size: 11px;
-          }
-  
-          .group-card-data {
-            margin-top: 20px;
-  
-            display: grid;
-  
-            grid-template-columns:
-              repeat(
-                3,
-                1fr
-              );
-  
-            gap: 9px;
-          }
-  
-          .group-data-item {
-            padding:
-              11px;
-  
-            border-radius:
-              12px;
-  
-            background:
-              #f5f8f8;
-          }
-  
-          .group-data-item span {
-            display: block;
-  
-            color:
-              #809096;
-  
-            font-size: 11px;
-          }
-  
-          .group-data-item strong {
-            display: block;
-  
-            margin-top: 5px;
-  
-            color:
-              #314c52;
-  
-            font-family:
-              var(
-                --font-mono,
-                "Space Mono",
-                monospace
-              );
-  
-            font-size: 12px;
-          }
-  
-          .group-card-bottom {
-            margin-top: auto;
-  
-            padding-top: 18px;
-  
-            display: flex;
-  
-            align-items: center;
-  
-            justify-content:
-              space-between;
-  
-            gap: 14px;
-          }
-  
-          .group-pool {
-            display: flex;
-  
-            flex-direction:
-              column;
-          }
-  
-          .group-pool span {
-            color:
-              #809197;
-  
-            font-size: 11px;
-          }
-  
-          .group-pool strong {
-            margin-top: 3px;
-  
-            color:
-              #087659;
-  
-            font-family:
-              var(
-                --font-mono,
-                "Space Mono",
-                monospace
-              );
-  
-            font-size: 17px;
-          }
-  
-          .group-open-button {
-            min-height: 41px;
-  
-            padding:
-              0 14px;
-  
-            display:
-              inline-flex;
-  
-            align-items: center;
-  
-            justify-content:
-              center;
-  
-            gap: 7px;
-  
-            border:
-              1px solid
-              #c9dfd8;
-  
-            border-radius: 11px;
-  
-            background: white;
-  
-            color:
-              var(--green-dark);
-  
-            font-size:
-              12px !important;
-  
-            font-weight: 700;
-  
-            cursor: pointer;
-          }
-  
-          /* =================================================
-             EMPTY
-          ================================================= */
-  
-          .groups-empty {
-            margin-top: 22px;
-  
-            padding:
-              50px 20px;
-  
-            text-align: center;
-  
-            border:
-              1px dashed
-              #d2e1e3;
-  
-            border-radius: 18px;
-  
-            background:
-              #fbfcfc;
-          }
-  
-          .groups-empty strong {
-            display: block;
-  
-            color:
-              #173139;
-  
-            font-size: 16px;
-          }
-  
-          .groups-empty p {
-            max-width: 420px;
-  
-            margin:
-              8px auto 0;
-  
-            color:
-              var(--muted);
-  
-            font-size: 13px;
-          }
-  
-          /* =================================================
-             NOTE
-          ================================================= */
-  
-          .groups-note {
-            margin-top: 20px;
-  
-            padding:
-              16px 17px;
-  
-            display: flex;
-  
-            align-items:
-              flex-start;
-  
-            gap: 11px;
-  
-            border:
-              1px solid
-              #d7e8e3;
-  
-            border-radius: 15px;
-  
-            background:
-              #f6fbf9;
-          }
-  
-          .groups-note svg {
-            flex: 0 0 auto;
-  
-            color:
-              var(--green-dark);
-          }
-  
-          .groups-note strong {
-            display: block;
-  
-            color:
-              #284a44;
-  
-            font-size: 13px;
-          }
-  
-          .groups-note p {
-            margin:
-              4px 0 0;
-  
-            color:
-              #758c88;
-  
-            font-size: 12px;
-  
-            line-height: 1.6;
-          }
-  
-          /* =================================================
-             RESPONSIVE
-          ================================================= */
-  
-          @media (
-            max-width: 1000px
-          ) {
-  
-            .groups-stats {
-              grid-template-columns:
-                repeat(
-                  2,
-                  1fr
-                );
-            }
-  
-            .groups-grid {
-              grid-template-columns:
-                1fr;
-            }
-  
-          }
-  
-          @media (
-            max-width: 720px
-          ) {
-  
-            .groups-page-header {
-              align-items:
-                flex-start;
-  
-              flex-direction:
-                column;
-            }
-  
-            .groups-create-button {
-              width: 100%;
-            }
-  
-            .groups-directory-header {
-              align-items:
-                flex-start;
-  
-              flex-direction:
-                column;
-            }
-  
-            .groups-search {
-              width: 100%;
-            }
-  
-            .groups-form {
-              grid-template-columns:
-                1fr;
-            }
-  
-            .groups-pool-preview,
-            .groups-form-actions {
-              grid-column:
-                auto;
-            }
-  
-            .groups-form-actions
-            .primary-button {
-              width: 100%;
-            }
-  
-          }
-  
-          @media (
-            max-width: 520px
-          ) {
-  
-            .groups-stats {
-              grid-template-columns:
-                1fr;
-            }
-  
-            .groups-hero {
-              padding: 24px;
-            }
-  
-            .groups-directory,
-            .groups-create-panel {
-              padding: 20px;
-            }
-  
-            .group-card-data {
-              grid-template-columns:
-                1fr;
-            }
-  
-            .group-card-bottom {
-              align-items:
-                flex-start;
-  
-              flex-direction:
-                column;
-            }
-  
-            .group-open-button {
-              width: 100%;
-            }
-  
-          }
-  
-        `}</style>
-  
-        <main className="page-content">
-  
-          {/* =================================================
-              HEADER
-          ================================================= */}
-  
-          <div className="groups-page-header">
-  
-            <div className="page-heading">
-  
-              <small>
-                CHIT GROUP MANAGEMENT
-              </small>
-  
-              <h1>
-                Chit groups
-              </h1>
-  
-              <p>
-                Manage the savings groups
-                you participate in and
-                coordinate the groups you
-                created.
-              </p>
-  
+      <div className="flex min-h-screen items-center justify-center bg-[#f4f5f7] text-[16px] text-black/50">
+        Loading Chit Groups...
+      </div>
+    );
+  }
+
+
+  return (
+    <AppShell
+      user={user}
+      active="chits"
+    >
+
+      <main className="space-y-5">
+
+        {/* =================================================
+            HEADER
+        ================================================= */}
+
+        <section className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+
+          <div>
+
+            <div className="text-[12px] font-semibold uppercase tracking-[0.13em] text-blue-600">
+              Chit portfolio
             </div>
-  
-            <button
-              type="button"
-              className="groups-create-button"
-              onClick={() => {
-                setShowCreate(
-                  !showCreate
-                );
-  
-                setCreateMessage(
-                  ""
-                );
-              }}
-            >
-  
-              <Plus size={17} />
-  
-              Create Chit Group
-  
-            </button>
-  
+
+            <h1 className="mt-2 text-[36px] font-semibold tracking-[-0.055em] text-[#111318] md:text-[44px]">
+              Chit Groups
+            </h1>
+
+            <p className="mt-3 max-w-[650px] text-[15px] leading-7 text-black/50">
+              Manage your financial
+              circles, compare pool values,
+              review member capacity and
+              create new chit groups.
+            </p>
+
           </div>
-  
-          {error && (
-            <div className="app-message error">
-              {error}
-            </div>
-          )}
-  
-          {/* =================================================
-              HERO
-          ================================================= */}
-  
-          <section className="groups-hero">
-  
-            <div className="groups-hero-copy">
-  
-              <span className="groups-eyebrow">
-                YOUR FINANCIAL CIRCLES
-              </span>
-  
-              <h2>
-                Every group has its
-                own financial lifecycle.
-              </h2>
-  
-              <p>
-                Open a chit group to
-                manage its members,
-                create rounds and follow
-                contributions, bidding
-                and settlement activity.
-              </p>
-  
-            </div>
-  
-          </section>
-  
-          {/* =================================================
-              STATS
-          ================================================= */}
-  
-          <div className="groups-stats">
-  
-            <div className="groups-stat">
-  
-              <div className="groups-stat-icon">
-  
-                <WalletCards
-                  size={21}
-                />
-  
-              </div>
-  
-              <div>
-  
-                <strong>
-                  {groups.length}
-                </strong>
-  
-                <span>
-                  Accessible groups
-                </span>
-  
-              </div>
-  
-            </div>
-  
-            <div className="groups-stat">
-  
-              <div className="groups-stat-icon">
-  
-                <Crown
-                  size={21}
-                />
-  
-              </div>
-  
-              <div>
-  
-                <strong>
-                  {
-                    managedGroups.length
-                  }
-                </strong>
-  
-                <span>
-                  Groups managed by you
-                </span>
-  
-              </div>
-  
-            </div>
-  
-            <div className="groups-stat">
-  
-              <div className="groups-stat-icon">
-  
-                <Coins
-                  size={21}
-                />
-  
-              </div>
-  
-              <div>
-  
-                <strong>
-                  ₹
-                  {money(
-                    totalPool
-                  )}
-                </strong>
-  
-                <span>
-                  Combined pool value
-                </span>
-  
-              </div>
-  
-            </div>
-  
-            <div className="groups-stat">
-  
-              <div className="groups-stat-icon">
-  
-                <Users
-                  size={21}
-                />
-  
-              </div>
-  
-              <div>
-  
-                <strong>
-                  {totalCapacity}
-                </strong>
-  
-                <span>
-                  Total member capacity
-                </span>
-  
-              </div>
-  
-            </div>
-  
+
+
+          <Button
+            type="button"
+            data-tour="create-chit-group"
+            onClick={() =>
+              setCreateOpen(
+                true
+              )
+            }
+            className="h-12 rounded-full bg-[#111318] px-6 !text-white hover:bg-[#25282e]"
+          >
+
+            <Plus
+              size={17}
+            />
+
+            Create Chit Group
+
+          </Button>
+
+        </section>
+
+
+        {error && (
+
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-[14px] text-red-700">
+            {error}
           </div>
-  
-          {/* =================================================
-              CREATE GROUP
-          ================================================= */}
-  
-          {showCreate && (
-  
-            <section className="groups-create-panel">
-  
-              <div className="groups-create-header">
-  
-                <div>
-  
-                  <h3>
-                    Create a new chit group
-                  </h3>
-  
-                  <p>
-                    Define the contribution,
-                    member capacity and
-                    duration.
-                  </p>
-  
-                </div>
-  
-                <button
-                  type="button"
-                  className="groups-close-button"
-                  onClick={() =>
-                    setShowCreate(
-                      false
-                    )
-                  }
+
+        )}
+
+
+        {/* =================================================
+            METRICS
+        ================================================= */}
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+          <MetricCard
+            icon={
+              WalletCards
+            }
+            label="Accessible groups"
+            value={
+              groups.length
+            }
+            description="Groups available to your account"
+          />
+
+          <MetricCard
+            icon={Crown}
+            label="Managed groups"
+            value={
+              managedGroups.length
+            }
+            description="Chit groups created by you"
+          />
+
+          <MetricCard
+            icon={
+              IndianRupee
+            }
+            label="Total pool value"
+            value={`₹${money(
+              totalPool
+            )}`}
+            description={`Average ${shortMoney(
+              averagePool
+            )} per group`}
+          />
+
+          <MetricCard
+            icon={Users}
+            label="Member capacity"
+            value={
+              memberCapacity
+            }
+            description="Configured member slots"
+          />
+
+        </section>
+
+
+        {/* =================================================
+            VISUAL ANALYTICS
+        ================================================= */}
+
+        <section className="grid gap-5 xl:grid-cols-[1.35fr_.65fr]">
+
+          <Card className="rounded-[26px] border-black/[0.07] shadow-none">
+
+            <CardHeader className="px-6 pt-6 md:px-7">
+
+              <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+                Pool value comparison
+              </CardTitle>
+
+              <CardDescription className="mt-2 text-[14px]">
+                Compare configured chit
+                values across all accessible
+                groups.
+              </CardDescription>
+
+            </CardHeader>
+
+
+            <CardContent className="px-4 pb-6 md:px-6">
+
+              {chartData.length ===
+              0 ? (
+
+                <EmptyState
+                  title="No group data"
+                  description="Create your first chit group to populate this chart."
+                />
+
+              ) : (
+
+                <div
+                  style={{
+                    height:
+                      Math.max(
+                        290,
+                        chartData.length *
+                          58
+                      ),
+                  }}
                 >
-                  <X size={17} />
-                </button>
-  
+
+                  <ResponsiveContainer
+                    width="100%"
+                    height="100%"
+                  >
+
+                    <BarChart
+                      data={
+                        chartData
+                      }
+                      layout="vertical"
+                      margin={{
+                        top: 10,
+                        right: 25,
+                        left: 5,
+                        bottom: 10,
+                      }}
+                    >
+
+                      <CartesianGrid
+                        stroke="#e8eaee"
+                        strokeDasharray="4 4"
+                        horizontal={false}
+                      />
+
+                      <XAxis
+                        type="number"
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={
+                          shortMoney
+                        }
+                        tick={{
+                          fill:
+                            "#71717a",
+                          fontSize:
+                            12,
+                        }}
+                      />
+
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        width={120}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill:
+                            "#3f3f46",
+                          fontSize:
+                            12,
+                        }}
+                      />
+
+                      <Tooltip
+                        content={
+                          <GroupTooltip />
+                        }
+                      />
+
+                      <Bar
+                        dataKey="pool"
+                        fill="#2563eb"
+                        radius={[
+                          0,
+                          8,
+                          8,
+                          0,
+                        ]}
+                        maxBarSize={28}
+                      />
+
+                    </BarChart>
+
+                  </ResponsiveContainer>
+
+                </div>
+
+              )}
+
+            </CardContent>
+
+          </Card>
+
+
+          {/* PORTFOLIO SNAPSHOT */}
+
+          <Card className="rounded-[26px] border-black/[0.07] bg-[#111318] text-white shadow-none">
+
+            <CardHeader className="px-6 pt-6">
+
+              <div className="text-[11px] font-semibold uppercase tracking-[0.13em] text-blue-300">
+                Portfolio snapshot
               </div>
-  
-              <form
-                className="groups-form"
-                onSubmit={
-                  handleCreateGroup
+
+              <CardTitle className="mt-2 !text-white text-[24px] font-semibold tracking-[-0.045em]">
+                ₹
+                {money(
+                  totalPool
+                )}
+              </CardTitle>
+
+              <CardDescription className="!text-white/45 text-[13px]">
+                Total configured value
+              </CardDescription>
+
+            </CardHeader>
+
+
+            <CardContent className="space-y-3 px-6 pb-6">
+
+              <DarkMetric
+                label="Contribution total"
+                value={`₹${money(
+                  totalContribution
+                )}`}
+              />
+
+              <DarkMetric
+                label="Managed groups"
+                value={
+                  managedGroups.length
+                }
+              />
+
+              <DarkMetric
+                label="Member capacity"
+                value={
+                  memberCapacity
+                }
+              />
+
+              <DarkMetric
+                label="Average pool"
+                value={`₹${money(
+                  averagePool
+                )}`}
+              />
+
+            </CardContent>
+
+          </Card>
+
+        </section>
+
+
+        {/* =================================================
+            CREATE FORM
+        ================================================= */}
+
+        {createOpen && (
+
+          <Card
+            data-tour="create-group-form"
+            className="rounded-[26px] border-blue-200 bg-blue-50/30 shadow-none"
+          >
+
+            <CardHeader className="flex flex-row items-start justify-between gap-5 space-y-0 px-6 pt-6 md:px-7">
+
+              <div>
+
+                <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+                  Create a Chit Group
+                </CardTitle>
+
+                <CardDescription className="mt-2 max-w-[620px] text-[14px] leading-6">
+                  Configure the group name,
+                  contribution amount,
+                  member capacity and
+                  duration.
+                </CardDescription>
+
+              </div>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                onClick={() =>
+                  setCreateOpen(
+                    false
+                  )
                 }
               >
-  
-                <label className="groups-field">
-  
-                  <span>
-                    GROUP NAME
-                  </span>
-  
-                  <input
-                    type="text"
+
+                <X
+                  size={18}
+                />
+
+              </Button>
+
+            </CardHeader>
+
+
+            <CardContent className="px-6 pb-6 md:px-7">
+
+              <form
+                onSubmit={
+                  createGroup
+                }
+                className="grid gap-5 md:grid-cols-2 xl:grid-cols-4"
+              >
+
+                <div className="space-y-2">
+
+                  <Label
+                    htmlFor="groupName"
+                    className="text-[13px]"
+                  >
+                    Group name
+                  </Label>
+
+                  <Input
+                    id="groupName"
+                    data-tour="group-name"
                     value={
                       groupName
                     }
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setGroupName(
-                        e.target.value
+                        event.target.value
                       )
                     }
-                    placeholder="Example: College Savings"
-                    required
+                    placeholder="Example: Family Chit"
+                    className="h-12 rounded-xl bg-white"
                   />
-  
-                </label>
-  
-                <label className="groups-field">
-  
-                  <span>
-                    CONTRIBUTION PER MEMBER
-                  </span>
-  
-                  <input
-                    type="number"
-                    min="1"
-                    value={
-                      contributionAmount
-                    }
-                    onChange={(e) =>
-                      setContributionAmount(
-                        e.target.value
-                      )
-                    }
-                    placeholder="5000"
-                    required
-                  />
-  
-                </label>
-  
-                <label className="groups-field">
-  
-                  <span>
-                    NUMBER OF MEMBERS
-                  </span>
-  
-                  <input
-                    type="number"
-                    min="2"
-                    value={
-                      memberCount
-                    }
-                    onChange={(e) =>
-                      setMemberCount(
-                        e.target.value
-                      )
-                    }
-                    placeholder="5"
-                    required
-                  />
-  
-                </label>
-  
-                <label className="groups-field">
-  
-                  <span>
-                    DURATION
-                  </span>
-  
-                  <input
-                    type="number"
-                    min="1"
-                    value={
-                      duration
-                    }
-                    onChange={(e) =>
-                      setDuration(
-                        e.target.value
-                      )
-                    }
-                    placeholder="5"
-                    required
-                  />
-  
-                </label>
-  
-                <div className="groups-pool-preview">
-  
-                  <span>
-                    Calculated chit pool
-                  </span>
-  
-                  <strong>
-                    ₹
-                    {money(
-                      calculatedPool
-                    )}
-                  </strong>
-  
+
                 </div>
-  
-                <div className="groups-form-actions">
-  
-                  <button
-                    type="submit"
-                    className="primary-button"
-                    disabled={
-                      creating
-                    }
+
+
+                <div className="space-y-2">
+
+                  <Label
+                    htmlFor="contribution"
+                    className="text-[13px]"
                   >
-  
-                    <Plus size={15} />
-  
-                    {creating
-                      ? "Creating..."
-                      : "Create Chit Group"}
-  
-                  </button>
-  
-                </div>
-  
-              </form>
-  
-              {createMessage && (
-  
-                <div className="app-message">
-                  {createMessage}
-                </div>
-  
-              )}
-  
-            </section>
-  
-          )}
-  
-          {/* =================================================
-              GROUP DIRECTORY
-          ================================================= */}
-  
-          <section className="groups-directory">
-  
-            <div className="groups-directory-header">
-  
-              <div className="groups-title">
-  
-                <div className="groups-title-icon">
-  
-                  <WalletCards
-                    size={21}
+                    Contribution amount
+                  </Label>
+
+                  <Input
+                    id="contribution"
+                    data-tour="contribution-amount"
+                    type="number"
+                    min="1"
+                    value={
+                      contribution
+                    }
+                    onChange={(event) =>
+                      setContribution(
+                        event.target.value
+                      )
+                    }
+                    placeholder="7000"
+                    className="h-12 rounded-xl bg-white"
                   />
-  
+
                 </div>
-  
-                <div>
-  
-                  <h2>
-                    Your chit groups
-                  </h2>
-  
-                  <p>
-                    Search and open the
-                    groups available to
-                    your account.
-                  </p>
-  
+
+
+                <div className="space-y-2">
+
+                  <Label
+                    htmlFor="members"
+                    className="text-[13px]"
+                  >
+                    Number of members
+                  </Label>
+
+                  <Input
+                    id="members"
+                    data-tour="member-count"
+                    type="number"
+                    min="1"
+                    value={
+                      members
+                    }
+                    onChange={(event) =>
+                      setMembers(
+                        event.target.value
+                      )
+                    }
+                    placeholder="10"
+                    className="h-12 rounded-xl bg-white"
+                  />
+
                 </div>
-  
+
+
+                <div className="space-y-2">
+
+                  <Label
+                    htmlFor="duration"
+                    className="text-[13px]"
+                  >
+                    Duration
+                  </Label>
+
+                  <Input
+                    id="duration"
+                    data-tour="duration"
+                    type="number"
+                    min="1"
+                    value={
+                      months
+                    }
+                    onChange={(event) =>
+                      setMonths(
+                        event.target.value
+                      )
+                    }
+                    placeholder="10"
+                    className="h-12 rounded-xl bg-white"
+                  />
+
+                </div>
+
+
+                <div className="md:col-span-2 xl:col-span-4">
+
+                  <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+
+                    <div>
+
+                      <div className="text-[13px] text-black/45">
+                        Calculated total pool
+                      </div>
+
+                      <div className="mt-1 text-[25px] font-semibold tracking-[-0.04em]">
+                        ₹
+                        {money(
+                          Number(
+                            contribution ||
+                              0
+                          ) *
+                            Number(
+                              members ||
+                                0
+                            )
+                        )}
+                      </div>
+
+                    </div>
+
+
+                    <Button
+                      type="submit"
+                      data-tour="submit-group"
+                      disabled={
+                        submitting
+                      }
+                      className="h-11 rounded-full bg-[#111318] px-6 !text-white hover:bg-[#25282e]"
+                    >
+
+                      {submitting
+                        ? "Creating..."
+                        : "Create Group"}
+
+                      {!submitting && (
+                        <ArrowRight
+                          size={16}
+                        />
+                      )}
+
+                    </Button>
+
+                  </div>
+
+                </div>
+
+              </form>
+
+            </CardContent>
+
+          </Card>
+
+        )}
+
+
+        {/* =================================================
+            SEARCH + GROUPS
+        ================================================= */}
+
+        <Card className="rounded-[26px] border-black/[0.07] shadow-none">
+
+          <CardHeader className="px-6 pt-6 md:px-7">
+
+            <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+
+              <div>
+
+                <CardTitle className="text-[22px] font-semibold tracking-[-0.04em]">
+                  Your Chit Groups
+                </CardTitle>
+
+                <CardDescription className="mt-2 text-[14px]">
+                  Open a group to manage
+                  its members and rounds.
+                </CardDescription>
+
               </div>
-  
-              <div className="groups-search">
-  
+
+
+              <div className="flex h-11 w-full items-center gap-2 rounded-full border border-black/[0.08] bg-[#fafafa] px-4 lg:w-[300px]">
+
                 <Search
-                  size={17}
+                  size={16}
+                  className="text-black/35"
                 />
-  
+
                 <input
-                  type="text"
-                  value={search}
-                  onChange={(e) =>
+                  value={
+                    search
+                  }
+                  onChange={(event) =>
                     setSearch(
-                      e.target.value
+                      event.target.value
                     )
                   }
                   placeholder="Search groups..."
+                  className="w-full bg-transparent text-[14px] outline-none placeholder:text-black/35"
                 />
-  
+
               </div>
-  
+
             </div>
-  
+
+          </CardHeader>
+
+
+          <CardContent className="px-6 pb-6 md:px-7">
+
             {filteredGroups.length ===
             0 ? (
-  
-              <div className="groups-empty">
-  
-                <strong>
-                  {groups.length === 0
-                    ? "No chit groups yet"
-                    : "No matching groups"}
-                </strong>
-  
-                <p>
-                  {groups.length === 0
-                    ? "Create your first chit group to begin managing members and rounds."
-                    : "Try a different group name or chit ID."}
-                </p>
-  
-              </div>
-  
+
+              <EmptyState
+                title="No chit groups found"
+                description={
+                  search
+                    ? "Try a different search."
+                    : "Create your first chit group to begin."
+                }
+              />
+
             ) : (
-  
-              <div className="groups-grid">
-  
+
+              <div className="grid gap-4 lg:grid-cols-2">
+
                 {filteredGroups.map(
                   (group) => {
-  
-                    const managedByUser =
+
+                    const managed =
                       Number(
                         group.created_by
                       ) ===
                       Number(
                         user?.user_id
                       );
-  
+
+                    const contribution =
+                      Number(
+                        group.contribution_amount ||
+                          0
+                      );
+
+                    const pool =
+                      Number(
+                        group.total_amount ||
+                          0
+                      );
+
+                    const capacity =
+                      Number(
+                        group.number_of_members ||
+                          0
+                      );
+
                     return (
-                      <article
+                      <button
                         key={
                           group.chit_id
                         }
-                        className="group-card"
+                        type="button"
+                        onClick={() =>
+                          navigate(
+                            `/chits/${group.chit_id}`
+                          )
+                        }
+                        className="group rounded-[22px] border border-black/[0.07] bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_14px_35px_rgba(15,23,42,0.07)]"
                       >
-  
-                        <div className="group-card-top">
-  
-                          <div className="group-card-icon">
-  
-                            <WalletCards
-                              size={21}
-                            />
-  
+
+                        <div className="flex items-start justify-between gap-4">
+
+                          <div className="flex min-w-0 items-center gap-3">
+
+                            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[#f0f3f8]">
+
+                              <WalletCards
+                                size={20}
+                              />
+
+                            </div>
+
+                            <div className="min-w-0">
+
+                              <div className="truncate text-[17px] font-semibold tracking-[-0.025em]">
+                                {
+                                  group.name
+                                }
+                              </div>
+
+                              <div className="mt-1 text-[12px] text-black/40">
+                                Chit #
+                                {
+                                  group.chit_id
+                                }
+                              </div>
+
+                            </div>
+
                           </div>
-  
-                          <div className="group-card-tags">
-  
-                            <span
-                              className="state-badge green"
-                            >
-                              {group.status ||
-                                "ACTIVE"}
-                            </span>
-  
-                            {managedByUser && (
-  
-                              <span className="group-managed">
-  
-                                <Crown
-                                  size={11}
-                                />
-  
-                                MANAGED
-  
-                              </span>
-  
-                            )}
-  
-                          </div>
-  
+
+
+                          <Badge
+                            variant={
+                              managed
+                                ? "default"
+                                : "secondary"
+                            }
+                            className="rounded-full px-3 py-1.5 text-[11px]"
+                          >
+                            {managed
+                              ? "Manager"
+                              : "Member"}
+                          </Badge>
+
                         </div>
-  
-                        <h3>
-                          {group.name}
-                        </h3>
-  
-                        <div className="group-card-id">
-                          CHIT #{group.chit_id}
-                        </div>
-  
-                        <div className="group-card-data">
-  
-                          <div className="group-data-item">
-  
-                            <span>
-                              Contribution
-                            </span>
-  
-                            <strong>
-                              ₹
-                              {money(
-                                group.contribution_amount
-                              )}
-                            </strong>
-  
-                          </div>
-  
-                          <div className="group-data-item">
-  
-                            <span>
-                              Members
-                            </span>
-  
-                            <strong>
-                              {
-                                group.number_of_members
-                              }
-                            </strong>
-  
-                          </div>
-  
-                          <div className="group-data-item">
-  
-                            <span>
-                              Duration
-                            </span>
-  
-                            <strong>
-                              {group.duration}
-                            </strong>
-  
-                          </div>
-  
-                        </div>
-  
-                        <div className="group-card-bottom">
-  
-                          <div className="group-pool">
-  
-                            <span>
-                              Pool value
-                            </span>
-  
-                            <strong>
-                              ₹
-                              {money(
-                                group.total_amount
-                              )}
-                            </strong>
-  
-                          </div>
-  
-                          <button
-                            type="button"
-                            className="group-open-button"
-                            onClick={() =>
-                              navigate(
-                                `/chits/${group.chit_id}`
+
+
+                        <div className="mt-6 grid grid-cols-3 gap-3">
+
+                          <GroupStat
+                            label="Pool"
+                            value={
+                              shortMoney(
+                                pool
                               )
                             }
-                          >
-  
-                            Open Group
-  
-                            <ArrowRight
-                              size={14}
-                            />
-  
-                          </button>
-  
+                          />
+
+                          <GroupStat
+                            label="Contribution"
+                            value={
+                              shortMoney(
+                                contribution
+                              )
+                            }
+                          />
+
+                          <GroupStat
+                            label="Members"
+                            value={
+                              capacity
+                            }
+                          />
+
                         </div>
-  
-                      </article>
+
+
+                        <div className="mt-5 flex items-center justify-between border-t border-black/[0.06] pt-4">
+
+                          <span className="text-[12px] text-black/40">
+                            Open group workspace
+                          </span>
+
+                          <ArrowRight
+                            size={17}
+                            className="text-black/35 transition group-hover:translate-x-1 group-hover:text-blue-600"
+                          />
+
+                        </div>
+
+                      </button>
                     );
                   }
                 )}
-  
+
               </div>
-  
+
             )}
-  
-            <div className="groups-note">
-  
-              <ShieldCheck
-                size={20}
-              />
-  
-              <div>
-  
-                <strong>
-                  Group access follows your
-                  ChitFlow membership
-                </strong>
-  
-                <p>
-                  Opening a group gives you
-                  access to its members,
-                  rounds and permitted
-                  workflow actions.
-                </p>
-  
-              </div>
-  
-            </div>
-  
-          </section>
-  
-        </main>
-  
-      </AppShell>
-    );
+
+          </CardContent>
+
+        </Card>
+
+      </main>
+
+    </AppShell>
+  );
+}
+
+
+/* =========================================================
+   COMPONENTS
+========================================================= */
+
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  description,
+}) {
+  return (
+    <Card className="rounded-[22px] border-black/[0.07] shadow-none">
+
+      <CardContent className="p-5">
+
+        <div className="flex size-11 items-center justify-center rounded-xl bg-[#f1f3f6]">
+
+          <Icon
+            size={19}
+          />
+
+        </div>
+
+        <div className="mt-6 text-[13px] text-black/45">
+          {label}
+        </div>
+
+        <div className="mt-1 text-[29px] font-semibold tracking-[-0.05em]">
+          {value}
+        </div>
+
+        <div className="mt-2 text-[12px] leading-5 text-black/40">
+          {description}
+        </div>
+
+      </CardContent>
+
+    </Card>
+  );
+}
+
+
+function DarkMetric({
+  label,
+  value,
+}) {
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.05] p-4">
+
+      <div className="text-[12px] !text-white/40">
+        {label}
+      </div>
+
+      <div className="mt-2 text-[22px] font-semibold tracking-[-0.04em] !text-white">
+        {value}
+      </div>
+
+    </div>
+  );
+}
+
+
+function GroupStat({
+  label,
+  value,
+}) {
+  return (
+    <div className="rounded-xl bg-[#f7f8fa] p-3">
+
+      <div className="text-[11px] text-black/40">
+        {label}
+      </div>
+
+      <div className="mt-1 text-[15px] font-semibold">
+        {value}
+      </div>
+
+    </div>
+  );
+}
+
+
+function GroupTooltip({
+  active,
+  payload,
+}) {
+  if (
+    !active ||
+    !payload?.length
+  ) {
+    return null;
   }
-  
-  export default ChitGroups;
+
+  const item =
+    payload[0]
+      ?.payload;
+
+  return (
+    <div className="rounded-xl border border-black/[0.08] bg-white px-4 py-3 shadow-xl">
+
+      <div className="text-[13px] font-semibold">
+        {
+          item?.fullName
+        }
+      </div>
+
+      <div className="mt-2 text-[12px] text-black/45">
+        Pool value
+      </div>
+
+      <div className="text-[15px] font-semibold text-blue-600">
+        ₹
+        {Number(
+          item?.pool ||
+            0
+        ).toLocaleString(
+          "en-IN"
+        )}
+      </div>
+
+      <div className="mt-2 text-[11px] text-black/40">
+        Contribution: ₹
+        {Number(
+          item?.contribution ||
+            0
+        ).toLocaleString(
+          "en-IN"
+        )}
+      </div>
+
+    </div>
+  );
+}
+
+
+function EmptyState({
+  title,
+  description,
+}) {
+  return (
+    <div className="rounded-2xl border border-dashed border-black/10 bg-[#fafafa] px-6 py-10 text-center">
+
+      <div className="text-[16px] font-semibold">
+        {title}
+      </div>
+
+      <p className="mx-auto mt-2 max-w-[440px] text-[14px] leading-6 text-black/45">
+        {description}
+      </p>
+
+    </div>
+  );
+}
+
+
+export default ChitGroups;
