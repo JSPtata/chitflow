@@ -4886,3 +4886,50 @@ button.auth-brand-contrast svg {
 .round-page [data-tour="round-lifecycle"] .chitflow-dark {
   background: #111318 !important;
 }
+
+
+/* Registration card spacing */
+.register-welcome-card {
+  gap: 0 !important;
+  padding: 28px !important;
+  border-radius: 24px !important;
+  background: #ffffff !important;
+}
+
+.register-welcome-card [data-slot="card-header"] {
+  padding: 0 0 24px !important;
+  gap: 0;
+}
+
+.register-welcome-card [data-slot="card-title"] {
+  font-size: clamp(28px, 2.4vw, 36px) !important;
+  line-height: 1.15;
+  letter-spacing: -0.045em;
+}
+
+.register-welcome-card [data-slot="card-description"] {
+  margin-top: 12px;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.register-welcome-card [data-slot="card-content"] {
+  padding: 0 !important;
+}
+
+.register-welcome-card [data-slot="card-content"] > .mt-7 {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.register-welcome-card [data-slot="card-content"] > .mt-7 p {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .register-welcome-card {
+    padding: 22px !important;
+    border-radius: 20px !important;
+  }
+}

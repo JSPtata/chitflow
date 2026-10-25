@@ -177,7 +177,7 @@ function Register() {
 
             </button>
 
-            <Card className="border-0 bg-transparent p-0 shadow-none">
+            <Card className="register-welcome-card border-0 bg-transparent p-0 shadow-none">
 
               <CardHeader className="space-y-0 px-0 pb-8">
 
