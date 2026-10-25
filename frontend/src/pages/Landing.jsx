@@ -48,7 +48,7 @@ import {
     ];
   
     return (
-      <main className="min-h-screen bg-[#f6f7f9] text-[#101114]">
+      <main className="landing-page min-h-screen bg-[#f6f7f9] text-[#101114]">
   
         {/* =================================================
             NAVIGATION
@@ -120,7 +120,7 @@ import {
               </Button>
   
               <Button
-                className="rounded-full bg-[#111318] px-5 text-white hover:bg-[#25282d]"
+                className="landing-dark-action rounded-full bg-[#111318] px-5 text-white hover:bg-[#25282d]"
                 onClick={() =>
                   navigate(
                     "/register"
@@ -148,7 +148,7 @@ import {
   
         <section className="mx-auto max-w-[1440px] px-5 pt-5 md:px-8">
   
-        <div className="relative isolate overflow-hidden rounded-[30px] bg-[#05070b]">
+        <div className="landing-dark-hero relative isolate overflow-hidden rounded-[30px] bg-[#05070b]">
   
             {/* Aceternity wow-factor */}
             <BackgroundBeams />
@@ -218,7 +218,7 @@ import {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="h-12 rounded-full border-white/15 bg-white/[0.05] px-6 text-[15px] text-white hover:bg-white/10 hover:text-white"
+                    className="landing-dark-action h-12 rounded-full border-white/15 bg-white/[0.05] px-6 text-[15px] text-white hover:bg-white/10 hover:text-white"
                     onClick={() =>
                       navigate(
                         "/login"

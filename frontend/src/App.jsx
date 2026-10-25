@@ -1,7 +1,9 @@
+import { useEffect } from "react";
 import {
   Navigate,
   Route,
   Routes,
+  useNavigate,
 } from "react-router-dom";
 
 import Landing from "./pages/Landing";
@@ -43,6 +45,12 @@ function ProtectedRoute({
 
 
 function App() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const expired = () => navigate("/login", { replace: true });
+    window.addEventListener("chitflow:auth-expired", expired);
+    return () => window.removeEventListener("chitflow:auth-expired", expired);
+  }, [navigate]);
   return (
     <>
 

@@ -6,6 +6,7 @@ from app.models.user import User
 from app.models.round import Round
 from app.models.chit_group import ChitGroup
 from app.models.payout import Payout
+from app.models.membership import Membership
 from app.schemas.payout import PayoutCreate, PayoutResponse
 from app.core.security import get_current_user
 from app.state_machine.round_state_machine import transition_round
@@ -29,7 +30,7 @@ def create_payout(
 ):
     round_obj = db.query(Round).filter(
         Round.round_id == round_id
-    ).first()
+    ).with_for_update().first()
 
     if not round_obj:
         raise HTTPException(
@@ -126,7 +127,7 @@ def verify_payout(
 
     round_obj = db.query(Round).filter(
         Round.round_id == payout.round_id  # type: ignore
-    ).first()
+    ).with_for_update().first()
 
     if not round_obj:
         raise HTTPException(
@@ -171,3 +172,18 @@ def verify_payout(
     db.refresh(payout)
 
     return payout
+
+@router.get("/{round_id}/payout", response_model=PayoutResponse | None)
+def get_payout(round_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    round_obj = db.query(Round).filter(Round.round_id == round_id).first()
+    if not round_obj:
+        raise HTTPException(status_code=404, detail="Round not found")
+    chit = db.query(ChitGroup).filter(ChitGroup.chit_id == round_obj.chit_id).first()
+    membership = db.query(Membership).filter(
+        Membership.chit_id == round_obj.chit_id,
+        Membership.user_id == current_user.user_id,
+        Membership.status == "ACTIVE"
+    ).first()
+    if not chit or (chit.created_by != current_user.user_id and not membership):
+        raise HTTPException(status_code=403, detail="You do not have access to this round payout")
+    return db.query(Payout).filter(Payout.round_id == round_id).first()

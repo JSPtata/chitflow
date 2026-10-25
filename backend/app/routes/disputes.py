@@ -43,6 +43,7 @@ def raise_dispute(
         .filter(
             Round.round_id == round_id
         )
+        .with_for_update()
         .first()
     )
 
@@ -147,6 +148,7 @@ def get_round_disputes(
         .filter(
             Round.round_id == round_id
         )
+        .with_for_update()
         .first()
     )
 
@@ -250,6 +252,7 @@ def review_dispute(
             Round.round_id
             == dispute.round_id
         )
+        .with_for_update()
         .first()
     )
 
@@ -352,6 +355,7 @@ def resolve_dispute(
             Round.round_id
             == dispute.round_id
         )
+        .with_for_update()
         .first()
     )
 

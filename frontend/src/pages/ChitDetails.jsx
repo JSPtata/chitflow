@@ -8,7 +8,6 @@ import {
   Gavel,
   IndianRupee,
   Plus,
-  ShieldCheck,
   UserPlus,
   Users,
   WalletCards,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -168,7 +168,7 @@ function ChitDetails() {
   ===================================================== */
 
   const loadData =
-    async () => {
+    useCallback(async () => {
       try {
         setLoading(true);
 
@@ -219,8 +219,7 @@ function ChitDetails() {
           error.response?.status;
 
         if (
-          status === 401 ||
-          status === 403
+          status === 401
         ) {
           localStorage.removeItem(
             "token"
@@ -243,12 +242,13 @@ function ChitDetails() {
       } finally {
         setLoading(false);
       }
-    };
+    }, [navigate, chitId]);
 
 
   useEffect(() => {
-    loadData();
-  }, [chitId]);
+    const task = window.setTimeout(() => loadData(), 0);
+    return () => window.clearTimeout(task);
+  }, [loadData]);
 
 
   /* =====================================================

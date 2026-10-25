@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import {
+  useCallback,
   useEffect,
   useState,
 } from "react";
@@ -221,7 +222,7 @@ function RoundDetails() {
   ===================================================== */
 
   const fetchData =
-    async () => {
+    useCallback(async () => {
       try {
         const [
           userResponse,
@@ -399,7 +400,7 @@ const accessibleGroups =
             "token"
           );
 
-          navigate("/");
+          navigate("/login");
         } else {
           setError(
             error.response
@@ -411,17 +412,15 @@ const accessibleGroups =
       } finally {
         setLoading(false);
       }
-    };
+    }, [navigate, roundId]);
 
   useEffect(() => {
-    setPayoutId(
-      localStorage.getItem(
-        `chitflow:payout:${roundId}`
-      ) || ""
-    );
-
-    fetchData();
-  }, [roundId]);
+    const task = window.setTimeout(() => {
+      setPayoutId(localStorage.getItem(`chitflow:payout:${roundId}`) || "");
+      fetchData();
+    }, 0);
+    return () => window.clearTimeout(task);
+  }, [roundId, fetchData]);
 
   /* =====================================================
      DERIVED VALUES
@@ -444,21 +443,6 @@ const accessibleGroups =
     nextStateMap[
       currentState
     ];
-
-  /*
-    Exceptional states may not
-    have a normal "next" state.
-    We prevent ChitJourney from
-    incorrectly saying they are
-    fully settled.
-  */
-
-  const journeyNextState =
-    currentState ===
-    "ROUND_SETTLED"
-      ? null
-      : nextState ||
-        "REVIEW_REQUIRED";
 
   const isCreator =
     user &&
@@ -552,15 +536,17 @@ const accessibleGroups =
 
   const verifyPayout =
     async () => {
-      if (!payoutId) {
-        throw new Error(
-          "The payout ID is not available in this browser session."
-        );
+      let id = payoutId;
+      if (!id) {
+        const response = await api.get(`/rounds/${roundId}/payout`);
+        id = response.data?.payout_id;
+        if (!id) {
+          throw new Error("No payout record is available for this round.");
+        }
+        setPayoutId(id);
+        localStorage.setItem(`chitflow:payout:${roundId}`, String(id));
       }
-
-      await api.patch(
-        `/rounds/payouts/${payoutId}/verify`
-      );
+      await api.patch(`/rounds/payouts/${id}/verify`);
     };
 
   /* =====================================================
@@ -2537,7 +2523,25 @@ const accessibleGroups =
 
       `}</style>
 
-      <main className="page-content round-page">
+      <main
+        className="page-content round-page"
+        data-help-round={JSON.stringify({
+          roundId: String(roundId),
+          ready: Boolean(!loading && round && group && user),
+          state: currentState,
+          isCreator: Boolean(isCreator),
+          hasContributed: contributions.some(item =>
+            Number(item.member_id) === Number(user?.user_id)
+          ),
+          verified: contributions.some(item =>
+            Number(item.member_id) === Number(user?.user_id) &&
+            item.payment_status === "VERIFIED"
+          ),
+          pending: pendingContributions,
+          contributionCount: contributions.length,
+          hasWinner: Boolean(winnerId),
+        })}
+      >
 
         {/* =================================================
             BACK
@@ -2816,7 +2820,9 @@ const accessibleGroups =
               Number(group?.created_by) ===
               Number(user?.user_id)
             }
-            onChanged={fetchData}
+            onAdvance={handleAdvanceState}
+            busy={transitionLoading}
+            statusMessage={transitionMessage}
           />
 
         </div>
@@ -2881,7 +2887,7 @@ const accessibleGroups =
 
             <div className="round-action-panel">
 
-              <form
+              <form data-tour="submit-contribution"
                 className="round-form"
                 onSubmit={
                   handleSubmitContribution
@@ -3155,7 +3161,7 @@ const accessibleGroups =
                           isCreator
                         ) ? (
 
-                          <button
+                          <button data-tour="verify-contributions"
                             type="button"
                             className="verify-button"
                             disabled={
@@ -3250,7 +3256,7 @@ const accessibleGroups =
 
             <div className="round-action-panel">
 
-              <form
+              <form data-tour="place-bid"
                 className="round-form single"
                 onSubmit={
                   handleSubmitBid
@@ -3552,7 +3558,7 @@ const accessibleGroups =
 
             <div className="round-action-panel">
 
-              <form
+              <form data-tour="payout"
                 className="round-form"
                 onSubmit={
                   handleCreatePayout
@@ -3692,7 +3698,7 @@ const accessibleGroups =
                 <p>
                   {payoutId
                     ? `Payout #${payoutId} is ready. Use Continue in the ChitFlow Journey above to verify it.`
-                    : "The payout exists, but its ID is not stored in this browser. The current backend does not expose a GET payout endpoint."}
+                    : "The payout record will be recovered from the server when you verify it."}
                 </p>
 
               </div>

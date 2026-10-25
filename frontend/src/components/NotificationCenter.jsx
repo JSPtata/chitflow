@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/button";
 
 
-const READ_STORAGE_KEY =
+const READ_STORAGE_PREFIX =
   "chitflow:read-notifications";
 
 
@@ -255,7 +255,8 @@ function createNotification(
    COMPONENT
 ========================================================= */
 
-function NotificationCenter() {
+function NotificationCenter({ user }) {
+  const READ_STORAGE_KEY = `${READ_STORAGE_PREFIX}:${user?.user_id || "anonymous"}`;
   const navigate =
     useNavigate();
 
@@ -275,7 +276,12 @@ function NotificationCenter() {
   const [
     readIds,
     setReadIds,
-  ] = useState([]);
+  ] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(READ_STORAGE_KEY) || "[]");
+      return Array.isArray(saved) ? saved : [];
+    } catch { return []; }
+  });
 
   const [
     loading,
@@ -287,29 +293,7 @@ function NotificationCenter() {
      READ STATE
   ===================================================== */
 
-  useEffect(() => {
-    try {
-      const saved =
-        JSON.parse(
-          localStorage.getItem(
-            READ_STORAGE_KEY
-          ) ||
-          "[]"
-        );
 
-      if (
-        Array.isArray(
-          saved
-        )
-      ) {
-        setReadIds(
-          saved
-        );
-      }
-    } catch {
-      setReadIds([]);
-    }
-  }, []);
 
 
   /* =====================================================

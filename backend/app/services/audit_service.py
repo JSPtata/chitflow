@@ -1,6 +1,6 @@
 import hashlib
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
@@ -28,7 +28,7 @@ def create_audit_event(
         else "GENESIS"
     )
 
-    timestamp = datetime.utcnow()
+    timestamp = datetime.now(UTC).replace(tzinfo=None)
 
     event_data = {
         "round_id": round_id,

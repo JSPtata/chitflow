@@ -29,7 +29,7 @@ def submit_contribution(
 ):
     round_obj = db.query(Round).filter(
         Round.round_id == round_id
-    ).first()
+    ).with_for_update().first()
 
     if not round_obj:
         raise HTTPException(
@@ -101,7 +101,7 @@ def verify_contribution(
 
     round_obj = db.query(Round).filter(
         Round.round_id == contribution.round_id
-    ).first()
+    ).with_for_update().first()
 
     if not round_obj:
         raise HTTPException(
@@ -124,6 +124,9 @@ def verify_contribution(
             status_code=403,
             detail="Only the chit group creator can verify contributions"
         )
+
+    if round_obj.current_state != "CONTRIBUTION_VERIFICATION":
+        raise HTTPException(status_code=400, detail="Contributions can be verified only during CONTRIBUTION_VERIFICATION")
 
     contribution.payment_status = "VERIFIED"  # type: ignore
 

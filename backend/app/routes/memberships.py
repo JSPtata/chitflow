@@ -27,7 +27,7 @@ def add_member(
 ):
     chit = db.query(ChitGroup).filter(
         ChitGroup.chit_id == chit_id
-    ).first()
+    ).with_for_update().first()
 
     if not chit:
         raise HTTPException(

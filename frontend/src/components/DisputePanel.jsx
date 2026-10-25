@@ -1,8 +1,7 @@
 import {
     AlertTriangle,
     CheckCircle2,
-    Gavel,
-    MessageSquareWarning,
+      MessageSquareWarning,
     SearchCheck,
     ShieldAlert,
   } from "lucide-react";
@@ -1014,7 +1013,7 @@ import {
   
             </div>
   
-            <form
+            <form data-tour="raise-dispute"
               className="dispute-form"
               onSubmit={
                 handleRaiseDispute
@@ -1170,7 +1169,7 @@ import {
   
               <div className="dispute-review-action">
   
-                <button
+                <button data-tour="review-dispute"
                   type="button"
                   className="dispute-submit review"
                   onClick={
@@ -1201,7 +1200,7 @@ import {
               "UNDER_REVIEW" &&
               isCreator && (
   
-              <form
+              <form data-tour="resolve-dispute"
                 className="dispute-form"
                 onSubmit={
                   handleResolve

@@ -154,7 +154,7 @@ function Login() {
             onClick={() =>
               navigate("/")
             }
-            className="relative z-10 flex w-fit items-center gap-3"
+            className="auth-brand-contrast relative z-10 flex w-fit items-center gap-3"
           >
 
             <span className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/10 backdrop-blur-xl">
@@ -319,9 +319,9 @@ function Login() {
 
             </button>
 
-            <Card className="border-0 bg-transparent p-0 shadow-none">
+            <Card className="login-welcome-card border-0 bg-transparent p-0 shadow-none">
 
-              <CardHeader className="space-y-0 px-0 pb-8">
+              <CardHeader className="space-y-0 px-0 pb-6">
 
                 <div className="mb-6 flex size-12 items-center justify-center rounded-2xl bg-[#f0f3f7]">
 
@@ -442,7 +442,7 @@ function Login() {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="h-12 w-full rounded-xl bg-[#111318] text-[15px] font-semibold text-white hover:bg-[#25282d]"
+                    className="auth-submit-contrast h-12 w-full rounded-xl bg-[#111318] text-[15px] font-semibold text-white hover:bg-[#25282d]"
                   >
 
                     {loading

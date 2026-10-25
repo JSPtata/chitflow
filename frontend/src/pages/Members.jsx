@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -61,6 +62,12 @@ import {
 /* =========================================================
    MEMBERS
 ========================================================= */
+
+const getMemberId = member => member.user_id || member.member_id || member.id || "—";
+const getMemberName = member => member.name || member.user_name || member.full_name || `User #${getMemberId(member)}`;
+const getMemberEmail = member => member.email || member.user_email || "";
+const getMemberStatus = member => String(member.status || member.membership_status || "ACTIVE").toUpperCase();
+const isActive = member => !["INACTIVE", "REMOVED", "SUSPENDED"].includes(getMemberStatus(member));
 
 function Members() {
   const navigate =
@@ -127,7 +134,7 @@ function Members() {
   ===================================================== */
 
   const loadData =
-    async () => {
+    useCallback(async () => {
       try {
         setLoading(true);
 
@@ -215,8 +222,7 @@ function Members() {
           error.response?.status;
 
         if (
-          status === 401 ||
-          status === 403
+          status === 401
         ) {
           localStorage.removeItem(
             "token"
@@ -239,12 +245,13 @@ function Members() {
       } finally {
         setLoading(false);
       }
-    };
+    }, [navigate]);
 
 
   useEffect(() => {
-    loadData();
-  }, []);
+    const task = window.setTimeout(() => loadData(), 0);
+    return () => window.clearTimeout(task);
+  }, [loadData]);
 
 
   /* =====================================================
@@ -271,6 +278,7 @@ function Members() {
 
 
   useEffect(() => {
+    const task = window.setTimeout(() => {
     if (
       !selectedGroup &&
       managedGroups.length >
@@ -283,6 +291,8 @@ function Members() {
         )
       );
     }
+    }, 0);
+    return () => window.clearTimeout(task);
   }, [
     managedGroups,
     selectedGroup,
@@ -292,53 +302,6 @@ function Members() {
   /* =====================================================
      MEMBER HELPERS
   ===================================================== */
-
-  const getMemberId =
-    (member) =>
-      member.user_id ||
-      member.member_id ||
-      member.id ||
-      "—";
-
-
-  const getMemberName =
-    (member) =>
-      member.name ||
-      member.user_name ||
-      member.full_name ||
-      `User #${getMemberId(
-        member
-      )}`;
-
-
-  const getMemberEmail =
-    (member) =>
-      member.email ||
-      member.user_email ||
-      "";
-
-
-  const getMemberStatus =
-    (member) =>
-      String(
-        member.status ||
-        member.membership_status ||
-        "ACTIVE"
-      ).toUpperCase();
-
-
-  const isActive =
-    (member) =>
-      ![
-        "INACTIVE",
-        "REMOVED",
-        "SUSPENDED",
-      ].includes(
-        getMemberStatus(
-          member
-        )
-      );
-
 
   /* =====================================================
      METRICS

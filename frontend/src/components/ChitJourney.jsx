@@ -223,7 +223,7 @@ import {
             </span>
   
             <strong>
-              #{round?.round_number || "—"}
+              #{roundId || "—"}
             </strong>
   
             <div className="journey-current-state">

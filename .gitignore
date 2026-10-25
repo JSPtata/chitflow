@@ -25,3 +25,16 @@ frontend/dist/
 # IDE
 .vscode/
 .idea/
+seed_chitflow_demo.sh
+
+# ChitFlow local dependencies, configuration and test outputs
+.venv/
+venv/
+*.db
+*.sqlite
+*.sqlite3
+.pytest_cache/
+.coverage
+htmlcov/
+frontend/test-results/
+frontend/playwright-report/

@@ -7,7 +7,6 @@ import {
   IndianRupee,
   ShieldCheck,
   TrendingUp,
-  Users,
   WalletCards,
 } from "lucide-react";
 
@@ -2138,57 +2137,6 @@ function FlowNode({
 
       <div className="mx-auto mt-1 max-w-[145px] text-[11px] leading-4 text-white/40">
         {description}
-      </div>
-
-    </div>
-  );
-}
-
-
-function MoneyChartTooltip({
-  active,
-  payload,
-}) {
-  if (
-    !active ||
-    !payload?.length
-  ) {
-    return null;
-  }
-
-  const item =
-    payload[0]
-      ?.payload;
-
-  return (
-    <div className="rounded-xl border border-black/[0.08] bg-white px-4 py-3 shadow-xl">
-
-      <div className="text-[13px] font-semibold text-[#111318]">
-        {item?.fullName}
-      </div>
-
-      <div className="mt-1 text-[12px] text-black/45">
-        Pool value
-      </div>
-
-      <div className="mt-1 text-[15px] font-semibold text-blue-600">
-        ₹
-        {Number(
-          item?.pool ||
-            0
-        ).toLocaleString(
-          "en-IN"
-        )}
-      </div>
-
-      <div className="mt-2 text-[11px] text-black/40">
-        Contribution: ₹
-        {Number(
-          item?.contribution ||
-            0
-        ).toLocaleString(
-          "en-IN"
-        )}
       </div>
 
     </div>

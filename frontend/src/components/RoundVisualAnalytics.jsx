@@ -157,8 +157,7 @@ import {
             {
               name: "Received",
               value:
-                received ||
-                1,
+                received,
             },
           ];
   
@@ -327,7 +326,7 @@ import {
   
           <CardHeader className="px-6 pt-6 md:px-7">
   
-            <div className="text-[11px] font-semibold uppercase tracking-[0.13em] text-violet-600">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.13em] text-blue-600">
               Auction activity
             </div>
   
@@ -348,7 +347,7 @@ import {
             {bidData.length ===
             0 ? (
   
-              <div className="flex h-[300px] flex-col items-center justify-center rounded-[20px] border border-dashed border-black/10 bg-[#fafafa]">
+              <div className="flex h-[300px] flex-col items-center justify-center rounded-[20px] border border-dashed border-black/10 bg-[#f5f9ff]">
   
                 <div className="flex size-12 items-center justify-center rounded-2xl bg-[#f1f3f6]">
   
@@ -371,7 +370,7 @@ import {
   
             ) : (
   
-              <div className="h-[320px] rounded-[20px] bg-[#fafbfc] p-3">
+              <div className="h-[320px] rounded-[20px] bg-[#f5f9ff] p-3">
   
                 <ResponsiveContainer
                   width="100%"
@@ -400,13 +399,13 @@ import {
   
                         <stop
                           offset="5%"
-                          stopColor="#7c3aed"
+                          stopColor="#2563eb"
                           stopOpacity={0.28}
                         />
   
                         <stop
                           offset="95%"
-                          stopColor="#7c3aed"
+                          stopColor="#2563eb"
                           stopOpacity={0}
                         />
   
@@ -416,7 +415,7 @@ import {
   
   
                     <CartesianGrid
-                      stroke="#e8eaee"
+                      stroke="#dbe3ef"
                       strokeDasharray="4 4"
                       vertical={false}
                     />
@@ -461,12 +460,12 @@ import {
                     <Area
                       type="monotone"
                       dataKey="amount"
-                      stroke="#7c3aed"
+                      stroke="#2563eb"
                       strokeWidth={3}
                       fill="url(#bidGradient)"
                       dot={{
                         r: 4,
-                        fill: "#7c3aed",
+                        fill: "#2563eb",
                         stroke: "#ffffff",
                         strokeWidth: 2,
                       }}
@@ -548,7 +547,7 @@ import {
           Bid #{item?.order}
         </div>
   
-        <div className="mt-1 text-[15px] font-semibold text-violet-700">
+        <div className="mt-1 text-[15px] font-semibold text-blue-700">
           ₹
           {Number(
             item?.amount ||

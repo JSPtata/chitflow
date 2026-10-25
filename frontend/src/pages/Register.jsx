@@ -408,7 +408,7 @@ function Register() {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="h-12 w-full rounded-xl bg-[#111318] text-[15px] font-semibold text-white hover:bg-[#25282d]"
+                    className="auth-submit-contrast h-12 w-full rounded-xl bg-[#111318] text-[15px] font-semibold text-white hover:bg-[#25282d]"
                   >
 
                     {loading
