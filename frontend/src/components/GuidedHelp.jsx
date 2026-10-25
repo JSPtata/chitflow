@@ -1,33 +1,9 @@
-import {
-    ArrowLeft,
-    ArrowRight,
-    CircleDollarSign,
-    Gavel,
-    HelpCircle,
-    ShieldCheck,
-    Sparkles,
-    Users,
-    WalletCards,
-    X,
-  } from "lucide-react";
-  
-  import {
-    useEffect,
-    useMemo,
-    useState,
-  } from "react";
-  
-  import {
-    useLocation,
-    useNavigate,
-  } from "react-router-dom";
-  
-  import {
-    Button,
-  } from "@/components/ui/button";
-  
-  
-  const TOURS = {
+import { ArrowLeft, ArrowRight, CircleDollarSign, Gavel, HelpCircle, ShieldCheck, Users, WalletCards, X } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import api from '@/api/api';
+
+const TOURS = {
     welcome: {
       title: "Welcome to ChitFlow",
       steps: [
@@ -375,814 +351,357 @@ import {
   ];
   
   
-  function GuidedHelp() {
-    const navigate =
-      useNavigate();
-  
-    const location =
-      useLocation();
-  
-    const [
-      menuOpen,
-      setMenuOpen,
-    ] = useState(false);
-  
-    const [
-      tourKey,
-      setTourKey,
-    ] = useState(null);
-  
-    const [
-      stepIndex,
-      setStepIndex,
-    ] = useState(0);
-  
-    const [
-      targetRect,
-      setTargetRect,
-    ] = useState(null);
-  
-  
-    const tour =
-      tourKey
-        ? TOURS[tourKey]
-        : null;
-  
-    const step =
-      tour?.steps?.[
-        stepIndex
-      ];
-  
-  
-    /* =====================================================
-       HELP BUTTON EVENT
-    ===================================================== */
-  
-    useEffect(() => {
-      const openHelp =
-        () => {
-          setTourKey(null);
-          setStepIndex(0);
-          setMenuOpen(true);
-        };
-  
-      window.addEventListener(
-        "chitflow:open-help",
-        openHelp
-      );
-  
-      return () =>
-        window.removeEventListener(
-          "chitflow:open-help",
-          openHelp
-        );
-    }, []);
-  
-  
-    /* =====================================================
-       AUTOMATIC NEW-ACCOUNT ONBOARDING
-    ===================================================== */
-  
-    useEffect(() => {
-      const token =
-        localStorage.getItem(
-          "token"
-        );
-  
-      const shouldStart =
-        localStorage.getItem(
-          "chitflow:start-onboarding"
-        );
-  
-      if (
-        token &&
-        shouldStart === "1" &&
-        location.pathname ===
-          "/dashboard"
-      ) {
-        localStorage.removeItem(
-          "chitflow:start-onboarding"
-        );
-  
-        setMenuOpen(false);
-        setTourKey("welcome");
-        setStepIndex(0);
-      }
-    }, [location.pathname]);
-  
-  
-    /* =====================================================
-       AUTO-CONTINUE AFTER USER OPENS GROUP / ROUND
-    ===================================================== */
-  
-    useEffect(() => {
-      if (
-        !step?.waitForPath
-      ) {
-        return;
-      }
-  
-      if (
-        location.pathname.startsWith(
-          step.waitForPath
-        )
-      ) {
-        setStepIndex(
-          (current) =>
-            current + 1
-        );
-      }
-    }, [
-      location.pathname,
-      step,
-    ]);
-  
-  
-    /* =====================================================
-       POSITION HIGHLIGHT
-    ===================================================== */
-  
-    useEffect(() => {
-      if (!step) {
-        setTargetRect(null);
-        return;
-      }
-  
-      if (
-        step.route &&
-        location.pathname !==
-          step.route &&
-        !step.waitForPath
-      ) {
-        navigate(
-          step.route
-        );
-  
-        return;
-      }
-  
-      if (
-        step.route &&
-        step.waitForPath &&
-        !location.pathname.startsWith(
-          step.waitForPath
-        ) &&
-        location.pathname !==
-          step.route
-      ) {
-        navigate(
-          step.route
-        );
-  
-        return;
-      }
-  
-  
-      let timeout;
-  
-  
-      const locate =
-        () => {
-          if (
-            step.openSelector &&
-            !document.querySelector(
-              step.selector
-            )
-          ) {
-            const opener =
-              document.querySelector(
-                step.openSelector
-              );
-  
-            opener?.click();
-          }
-  
-  
-          timeout =
-            window.setTimeout(
-              () => {
-                if (
-                  !step.selector
-                ) {
-                  setTargetRect(
-                    null
-                  );
-  
-                  return;
-                }
-  
-                const element =
-                  document.querySelector(
-                    step.selector
-                  );
-  
-                if (!element) {
-                  setTargetRect(
-                    null
-                  );
-  
-                  return;
-                }
-  
-                element.scrollIntoView({
-                  behavior:
-                    "smooth",
-                  block:
-                    "center",
-                  inline:
-                    "center",
-                });
-  
-                window.setTimeout(
-                  () => {
-                    const rect =
-                      element.getBoundingClientRect();
-  
-                    setTargetRect({
-                      top:
-                        rect.top -
-                        8,
-  
-                      left:
-                        rect.left -
-                        8,
-  
-                      width:
-                        rect.width +
-                        16,
-  
-                      height:
-                        rect.height +
-                        16,
-                    });
-                  },
-                  300
-                );
-              },
-              step.openSelector
-                ? 250
-                : 80
-            );
-        };
-  
-  
-      locate();
-  
-  
-      const update =
-        () => {
-          const element =
-            step.selector
-              ? document.querySelector(
-                  step.selector
-                )
-              : null;
-  
-          if (!element) {
-            return;
-          }
-  
-          const rect =
-            element.getBoundingClientRect();
-  
-          setTargetRect({
-            top:
-              rect.top -
-              8,
-  
-            left:
-              rect.left -
-              8,
-  
-            width:
-              rect.width +
-              16,
-  
-            height:
-              rect.height +
-              16,
-          });
-        };
-  
-  
-      window.addEventListener(
-        "resize",
-        update
-      );
-  
-      window.addEventListener(
-        "scroll",
-        update,
-        true
-      );
-  
-  
-      return () => {
-        window.clearTimeout(
-          timeout
-        );
-  
-        window.removeEventListener(
-          "resize",
-          update
-        );
-  
-        window.removeEventListener(
-          "scroll",
-          update,
-          true
-        );
-      };
-    }, [
-      step,
-      location.pathname,
-      navigate,
-    ]);
-  
-  
-    const progress =
-      useMemo(
-        () =>
-          tour
-            ? `${stepIndex + 1} / ${tour.steps.length}`
-            : "",
-        [
-          tour,
-          stepIndex,
-        ]
-      );
-  
-  
-    const startTour =
-      (key) => {
-        setMenuOpen(false);
-        setTourKey(key);
-        setStepIndex(0);
-      };
-  
-  
-    const finishTour =
-      () => {
-        if (
-          tourKey ===
-          "welcome"
-        ) {
-          localStorage.setItem(
-            "chitflow:onboarding-complete",
-            "1"
-          );
-        }
-  
-        setTourKey(null);
-        setStepIndex(0);
-        setTargetRect(null);
-      };
-  
-  
-    const next =
-      () => {
-        if (!tour) {
-          return;
-        }
-  
-        if (
-          stepIndex >=
-          tour.steps.length -
-            1
-        ) {
-          finishTour();
-          return;
-        }
-  
-        setStepIndex(
-          stepIndex + 1
-        );
-      };
-  
-  
-    const back =
-      () => {
-        if (
-          stepIndex <= 0
-        ) {
-          return;
-        }
-  
-        setStepIndex(
-          stepIndex - 1
-        );
-      };
-      
-      /* =====================================================
-   AUTO ADVANCE WHEN USER CLICKS A GUIDED CONTROL
-===================================================== */
+  // Successful API responses advance action steps; the guide never performs writes.
+const action = (method, path) => ({ method, path });
+TOURS.createGroup.steps[0].advanceWhenVisible = '[data-tour="group-name"]';
+TOURS.createGroup.steps.at(-1).success = action('post', /^\/chit-groups\/?$/);
+TOURS.addMembers.steps[0].advanceWhenVisible = '[data-tour="member-group"]';
+TOURS.addMembers.steps.at(-1).success = action('post', /^\/chit-groups\/\d+\/members$/);
+TOURS.createRound.steps = [
+  { route: '/chit-groups', waitForPath: '/chits/', title: 'Choose a group you manage', description: 'Open a group. Only its creator can create a round.' },
+  { selector: '[data-tour="create-round"]', advanceWhenVisible: '[data-tour="round-form"]', title: 'Open the round form', description: 'Select Create Round. We continue when the form opens.' },
+  { selector: '[data-tour="round-form"]', title: 'Configure and create the round', description: 'Review the round number and due date, then submit. This step completes only after the server accepts the round.', success: action('post', /^\/chit-groups\/\d+\/rounds$/) },
+];
+TOURS.contribution.steps[1].success = action('post', /^\/rounds\/\d+\/contributions$/);
+TOURS.verify.steps[1].success = action('patch', /^\/rounds\/contributions\/\d+\/verify$/);
+TOURS.verify.steps[1].description = 'The group creator can verify a submitted payment during contribution verification. This guide completes after one payment is successfully verified; review the remaining payments separately.';
+TOURS.bid.steps[1].success = action('post', /^\/rounds\/\d+\/bids$/);
+TOURS.dispute.steps[1].selector = '[data-tour="raise-dispute"], [data-tour="review-dispute"], [data-tour="resolve-dispute"]';
+TOURS.dispute.steps[1].description = 'Members can raise a dispute during the challenge period. The group creator can review or resolve it in the appropriate state. This guide completes after one successful dispute action.';
+TOURS.dispute.steps[1].success = action(null, /^\/rounds\/(?:\d+\/disputes|disputes\/\d+\/(?:review|resolve))$/);
+TOURS.payout.title = 'Record a Payout';
+TOURS.payout.steps[1].description = 'After RESULT CONFIRMED, the group creator can record the winner payout. This guide confirms payout creation only; verification and settlement are separate actions.';
+TOURS.payout.steps[1].success = action('post', /^\/rounds\/\d+\/payout$/);
+const prerequisites = {
+  createRound: 'Open a group you created. The Create Round control is available to that group’s creator.',
+  contribution: 'Choose a round in CONTRIBUTION OPEN. You must be an active member of its group.',
+  verify: 'Choose a round in CONTRIBUTION VERIFICATION that has unverified payments. Only the group creator can verify them.',
+  bid: 'Choose a round in BIDDING OPEN. A verified contribution is required before you can bid.',
+  dispute: 'Members raise disputes during CHALLENGE OPEN. Review and resolution require the group creator and the appropriate dispute state.',
+  payout: 'Choose a round in RESULT CONFIRMED with a selected winner. Only the group creator can record its payout.',
+};
 
-useEffect(() => {
-    if (
-      !step?.selector ||
-      !step?.advanceOnClick
-    ) {
-      return;
-    }
-  
-    const element =
-      document.querySelector(
-        step.selector
-      );
-  
-    if (!element) {
-      return;
-    }
-  
-    const handleGuidedClick =
-      () => {
-        window.setTimeout(
-          () => {
-            setStepIndex(
-              (current) => {
-                if (
-                  !tour ||
-                  current >=
-                    tour.steps.length -
-                      1
-                ) {
-                  return current;
-                }
-  
-                return (
-                  current + 1
-                );
-              }
-            );
-          },
-          250
-        );
-      };
-  
-    element.addEventListener(
-      "click",
-      handleGuidedClick
-    );
-  
-    return () => {
-      element.removeEventListener(
-        "click",
-        handleGuidedClick
-      );
-    };
-  }, [
-    step,
-    tour,
-  ]);
-  
-    /* =====================================================
-       HELP TOPIC MENU
-    ===================================================== */
-  
-    if (menuOpen) {
-      return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4 backdrop-blur-[2px]">
-  
-          <div className="max-h-[88vh] w-full max-w-[760px] overflow-y-auto rounded-[28px] border border-black/[0.08] bg-white p-6 shadow-[0_30px_120px_rgba(0,0,0,0.28)] md:p-8">
-  
-            <div className="flex items-start justify-between gap-5">
-  
-              <div>
-  
-                <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-[12px] font-semibold text-blue-700">
-  
-                  <Sparkles
-                    size={14}
-                  />
-  
-                  Guided Help
-  
-                </div>
-  
-                <h2 className="mt-4 text-[28px] font-semibold tracking-[-0.045em] text-[#111318]">
-                  What would you like
-                  help with?
-                </h2>
-  
-                <p className="mt-2 max-w-[580px] text-[14px] leading-6 text-black/50">
-                  ChitFlow will take you to
-                  the correct area and
-                  highlight the controls you
-                  need.
-                </p>
-  
-              </div>
-  
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0 rounded-full"
-                onClick={() =>
-                  setMenuOpen(
-                    false
-                  )
-                }
-              >
-                <X
-                  size={19}
-                />
-              </Button>
-  
-            </div>
-  
-  
-            <div className="mt-7 grid gap-3 md:grid-cols-2">
-  
-              {HELP_TOPICS.map(
-                (topic) => {
-                  const Icon =
-                    topic.icon;
-  
-                  return (
-                    <button
-                      key={
-                        topic.key
-                      }
-                      type="button"
-                      onClick={() =>
-                        startTour(
-                          topic.key
-                        )
-                      }
-                      className="flex gap-4 rounded-2xl border border-black/[0.08] p-4 text-left transition hover:border-blue-200 hover:bg-blue-50/40"
-                    >
-  
-                      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#f1f3f6] text-[#111318]">
-  
-                        <Icon
-                          size={18}
-                        />
-  
-                      </span>
-  
-                      <span>
-  
-                        <span className="block text-[15px] font-semibold text-[#111318]">
-                          {
-                            topic.title
-                          }
-                        </span>
-  
-                        <span className="mt-1 block text-[12px] leading-5 text-black/45">
-                          {
-                            topic.description
-                          }
-                        </span>
-  
-                      </span>
-  
-                    </button>
-                  );
-                }
-              )}
-  
-            </div>
-  
-  
-            <button
-              type="button"
-              onClick={() =>
-                startTour(
-                  "welcome"
-                )
-              }
-              className="mt-5 w-full rounded-2xl bg-[#111318] px-5 py-4 text-left"
-            >
-  
-              <span className="text-[14px] font-semibold !text-white">
-                Replay ChitFlow introduction
-              </span>
-  
-              <span className="mt-1 block text-[12px] !text-white/55">
-                Show the main navigation,
-                notifications and Help
-                controls again.
-              </span>
-  
-            </button>
-  
-          </div>
-  
-        </div>
-      );
-    }
-  
-  
-    if (
-      !tour ||
-      !step
-    ) {
-      return null;
-    }
-  
-  
-    const cardStyle =
-      targetRect
-        ? {
-            left:
-              Math.min(
-                Math.max(
-                  16,
-                  targetRect.left
-                ),
-                window.innerWidth -
-                  386
-              ),
-  
-            top:
-              targetRect.top +
-                targetRect.height +
-                16 <
-              window.innerHeight -
-                230
-                ? targetRect.top +
-                  targetRect.height +
-                  16
-                : Math.max(
-                    16,
-                    targetRect.top -
-                      220
-                  ),
-          }
-        : null;
-  
-  
-    return (
-      <>
-  
-        {targetRect ? (
-  
-          <div
-            className="pointer-events-none fixed z-[9997] rounded-2xl border-2 border-blue-400"
-            style={{
-              top:
-                targetRect.top,
-  
-              left:
-                targetRect.left,
-  
-              width:
-                targetRect.width,
-  
-              height:
-                targetRect.height,
-  
-              boxShadow:
-                "0 0 0 9999px rgba(2,6,15,0.72), 0 0 0 5px rgba(59,130,246,0.18)",
-            }}
-          />
-  
-        ) : (
-  
-          <div className="pointer-events-none fixed inset-0 z-[9997] bg-black/60 backdrop-blur-[1px]" />
-  
-        )}
-  
-  
-        <div
-          className={
-            targetRect
-              ? "fixed z-[9999] w-[360px] max-w-[calc(100vw-32px)]"
-              : "fixed inset-0 z-[9999] flex items-center justify-center p-4"
-          }
-          style={
-            targetRect
-              ? cardStyle
-              : undefined
-          }
-        >
-  
-          <div className="w-full rounded-[22px] border border-black/[0.08] bg-white p-5 shadow-[0_24px_80px_rgba(0,0,0,0.30)]">
-  
-            <div className="flex items-start justify-between gap-4">
-  
-              <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-blue-600">
-                {tour.title} ·{" "}
-                {progress}
-              </div>
-  
-              <button
-                type="button"
-                onClick={
-                  finishTour
-                }
-                className="text-black/35 transition hover:text-black"
-              >
-                <X
-                  size={17}
-                />
-              </button>
-  
-            </div>
-  
-  
-            <h3 className="mt-3 text-[20px] font-semibold tracking-[-0.035em] text-[#111318]">
-              {step.title}
-            </h3>
-  
-            <p className="mt-2 text-[13px] leading-6 text-black/50">
-              {step.description}
-            </p>
-  
-  
-            {step.selector &&
-              !targetRect && (
-  
-              <div className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[12px] leading-5 text-amber-800">
-                This control may only appear
-                when the current chit or
-                round reaches the required
-                state.
-              </div>
-  
-            )}
-  
-  
-            <div className="mt-5 flex items-center justify-between gap-3">
-  
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={
-                  stepIndex === 0
-                }
-                onClick={
-                  back
-                }
-                className="rounded-full"
-              >
-  
-                <ArrowLeft
-                  size={15}
-                />
-  
-                Back
-  
-              </Button>
-  
-              {step.waitForPath &&
-!location.pathname.startsWith(
-  step.waitForPath
-) ? (
+function visibleTarget(selector) {
+  if (!selector) return null;
+  return [...document.querySelectorAll(selector)].find(element => {
+    const rect = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+  }) || null;
+}
 
-  <div className="text-[12px] font-medium text-blue-600">
-    Continue in the page…
-  </div>
 
-) : step.advanceOnClick &&
-  targetRect ? (
-
-  <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-[12px] font-semibold text-blue-700">
-
-    Click the highlighted control
-
-    <ArrowRight
-      size={14}
-    />
-
-  </div>
-
-) : (
-
-  <Button
-    type="button"
-    onClick={
-      next
-    }
-    className="rounded-full bg-[#111318] px-5 !text-white hover:bg-[#24272d]"
-  >
-
-    {stepIndex ===
-    tour.steps.length -
-      1
-      ? "Finish"
-      : "Next"}
-
-    <ArrowRight
-      size={15}
-    />
-
-  </Button>
-
-)}
-              
-  
-            
-  
-            </div>
-  
-          </div>
-  
-        </div>
-  
-      </>
-    );
+// Read existing page data; backend permissions remain authoritative.
+function roundHelpAdvice(key) {
+  if (!["contribution", "verify", "bid", "dispute", "payout"].includes(key)) return null;
+  const roundId = window.location.pathname.match(/^\/rounds\/(\d+)$/)?.[1];
+  const node = document.querySelector("[data-help-round]");
+  if (!roundId || !node) return null;
+  let context;
+  try { context = JSON.parse(node.getAttribute("data-help-round")); }
+  catch { return null; }
+  if (String(context.roundId) !== roundId) return null;
+  const result = message => ({ pathname: window.location.pathname, message });
+  if (!context.ready || !context.state) return result("Round information is still loading. Wait for it to finish before choosing an action.");
+  const state = context.state;
+  const explain = message => result(`Current state: ${state.replaceAll("_", " ")}. ${message}`);
+  if (state === "ROUND_SETTLED") return explain("This round is settled; no further lifecycle transition is available. Choose another round for this task.");
+  if (key === "contribution") {
+    if (context.hasContributed) return explain("Your contribution is already recorded for this round. Review it in Contributions; do not submit it again.");
+    if (state !== "CONTRIBUTION_OPEN") return explain("Contributions can be submitted only during CONTRIBUTION OPEN. The group creator controls progression; choose a round accepting contributions.");
   }
-  
-  
-  export default GuidedHelp;
+  if (key === "verify") {
+    if (!context.isCreator) return explain("Only the group creator can verify contributions. Ask that person to review the payments.");
+    if (state !== "CONTRIBUTION_VERIFICATION") return explain("Payment verification controls appear during CONTRIBUTION VERIFICATION. Choose a round in that stage.");
+    if (context.contributionCount === 0) return explain("No contributions have been submitted, so there are no payments to verify.");
+    if (context.pending === 0) return explain("All recorded contributions are verified. There is no outstanding payment verification in this round.");
+  }
+  if (key === "bid") {
+    if (state !== "BIDDING_OPEN") return explain("Bidding is available only during BIDDING OPEN, after contribution verification. Choose an open bidding round.");
+    if (!context.verified) return explain("Your contribution must be verified before you can bid. Review Contributions and ask the group creator to verify your payment.");
+  }
+  if (key === "dispute") {
+    if (["DISPUTE_RAISED", "DISPUTE_UNDER_REVIEW"].includes(state)) {
+      if (!context.isCreator) return explain("A dispute is already active. Only the group creator can review or resolve it.");
+    } else if (state === "DISPUTE_RESOLVED") {
+      return explain("The dispute is resolved. The group creator must review the result before further progression.");
+    } else if (state !== "CHALLENGE_OPEN") {
+      return explain("New disputes can be raised during CHALLENGE OPEN. Review and resolution require an existing dispute and the appropriate dispute state.");
+    }
+  }
+  if (key === "payout") {
+    if (!context.isCreator) return explain("Only the group creator can record the winner payout.");
+    if (["PAYOUT_PENDING", "PAYOUT_VERIFICATION"].includes(state)) return explain("A payout has already been recorded. This guide covers creation only; verification and settlement are separate actions. Do not create a duplicate payout.");
+    if (state !== "RESULT_CONFIRMED") return explain("Record a payout only after RESULT CONFIRMED. Complete the result and challenge process first.");
+    if (!context.hasWinner) return explain("No winner is assigned. The result must be selected through the dedicated result action before a payout can be created.");
+  }
+  return null;
+}
+
+function GuidedHelp() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [session, setSession] = useState(null);
+  const [completed, setCompleted] = useState(null);
+  const [minimizedStep, setMinimizedStep] = useState(null);
+  const [layout, setLayout] = useState(null);
+  const [roundAdvice, setRoundAdvice] = useState(null);
+  const [viewport, setViewport] = useState({ width: window.innerWidth, height: window.innerHeight });
+  const [cardHeight, setCardHeight] = useState(300);
+  const cardRef = useRef(null);
+  const menuRef = useRef(null);
+  const activeRef = useRef(null);
+  const sessionCounter = useRef(0);
+  const step = session ? TOURS[session.key]?.steps[session.index] : null;
+  const tour = session ? TOURS[session.key] : null;
+  const authenticated = Boolean(localStorage.getItem('token')) && !['/', '/login', '/register'].includes(pathname);
+  const identity = session ? `${session.id}:${session.index}` : '';
+
+  const close = () => {
+    setMenuOpen(false); setSession(null); setCompleted(null); setLayout(null);
+    visibleTarget('[data-tour="help-button"]')?.focus();
+  };
+  const advance = (expected = identity) => {
+    // Ignore delayed events from a previous tour or step.
+    if (activeRef.current?.identity !== expected) return;
+    activeRef.current = null;
+    if (session.index + 1 >= tour.steps.length) {
+      if (session.key === 'welcome') localStorage.setItem('chitflow:onboarding-complete', '1');
+      setCompleted({ title: tour.title, action: Boolean(step.success) });
+      setSession(null); setLayout(null);
+    } else {
+      setSession(current => current && `${current.id}:${current.index}` === expected ? { ...current, index: current.index + 1 } : current);
+    }
+  };
+  // Refs let long-lived response observers validate the current tour without stale closures.
+  useLayoutEffect(() => {
+    activeRef.current = session ? { identity, advance, success: step.success, pathname } : null;
+  });
+
+  const start = key => {
+    const selected = TOURS[key];
+    if (!selected || !authenticated) return;
+    let index = 0;
+    if (selected.steps[0].waitForPath && pathname.startsWith(selected.steps[0].waitForPath)) index = 1;
+    setMenuOpen(false); setCompleted(null); setLayout(null);
+    setSession({ key, index, id: ++sessionCounter.current });
+    const first = selected.steps[index];
+    const choosingRound = first.waitForPath === '/rounds/' && /^\/chits\/[^/]+$/.test(pathname);
+    if (first.route && pathname !== first.route && !pathname.startsWith(first.waitForPath || '\0') && !choosingRound) navigate(first.route);
+  };
+
+  const continueInPage = () => {
+    if (step.waitForPath) { setMinimizedStep(identity); return; }
+    const target = visibleTarget(step.selector);
+    if (target) {
+      if (step.advanceWhenVisible) { target.click(); return; }
+      setMinimizedStep(identity);
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      const control = target.matches("input, select, textarea, button")
+        ? target : target.querySelector("input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)");
+      control?.focus({ preventScroll: true });
+      return;
+    }
+    const opener = visibleTarget(tour.steps.find(item => item.advanceWhenVisible)?.selector);
+    if (opener) { opener.click(); return; }
+    if (["createRound", "contribution", "verify", "bid", "dispute", "payout"].includes(session.key)) {
+      setLayout(null);
+      setSession(current => ({ ...current, index: 0, choosing: true }));
+      navigate("/chit-groups");
+    } else setMinimizedStep(identity);
+  };
+
+  useEffect(() => {
+    const open = () => { setSession(null); setCompleted(null); setLayout(null); setMenuOpen(true); };
+    window.addEventListener('chitflow:open-help', open);
+    return () => window.removeEventListener('chitflow:open-help', open);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (pathname === '/dashboard' && localStorage.getItem('token') && localStorage.getItem('chitflow:start-onboarding') === '1') {
+      queueMicrotask(() => {
+        if (cancelled) return;
+        localStorage.removeItem('chitflow:start-onboarding');
+        setMenuOpen(false); setCompleted(null); setLayout(null);
+        setSession({ key: 'welcome', index: 0, id: ++sessionCounter.current });
+      });
+    }
+    return () => { cancelled = true; };
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!step) return;
+    if (session.choosing) {
+      if (pathname === '/chit-groups') queueMicrotask(() => setSession(current => current?.id === session.id ? { ...current, choosing: false } : current));
+      return;
+    }
+    if (step.waitForPath) {
+      if (pathname.startsWith(step.waitForPath)) {
+        const current = activeRef.current;
+        queueMicrotask(() => current?.advance(current.identity));
+      }
+      // Let users browse group details while choosing a round.
+    } else if (step.route && pathname !== step.route) navigate(step.route);
+  }, [step, pathname, navigate, session]);
+
+  useEffect(() => {
+    const requests = new WeakMap();
+    const requestId = api.interceptors.request.use(config => {
+      const active = activeRef.current;
+      if (active?.success) requests.set(config, active);
+      return config;
+    });
+    const responseId = api.interceptors.response.use(response => {
+      const attempt = requests.get(response.config);
+      const active = activeRef.current;
+      if (!attempt || active?.identity !== attempt.identity || active.pathname !== attempt.pathname || response.status < 200 || response.status >= 300) return response;
+      const path = new URL(response.config.url, response.config.baseURL || window.location.origin).pathname;
+      const method = response.config.method?.toLowerCase();
+      const rule = attempt.success;
+      if (!['post', 'patch'].includes(method) || (rule.method && rule.method !== method) || !rule.path.test(path)) return response;
+      const currentRound = attempt.pathname.match(/^\/rounds\/(\d+)$/)?.[1];
+      const currentGroup = attempt.pathname.match(/^\/chits\/(\d+)$/)?.[1];
+      const data = response.data;
+      if (currentRound && String(data?.round_id) !== currentRound) return response;
+      if (currentGroup && String(data?.chit_id) !== currentGroup) return response;
+      // Observe the successful response; leave the original handler and response intact.
+      queueMicrotask(() => activeRef.current?.advance(attempt.identity));
+      return response;
+    });
+    return () => {
+      api.interceptors.request.eject(requestId);
+      api.interceptors.response.eject(responseId);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!step || !authenticated) return;
+    let frame, scrolled = null, observed = null;
+    const resize = new ResizeObserver(() => schedule());
+    const update = () => {
+      setViewport({ width: window.innerWidth, height: window.innerHeight });
+      const advice = roundHelpAdvice(session?.key);
+      setRoundAdvice(previous =>
+        previous?.pathname === advice?.pathname && previous?.message === advice?.message
+          ? previous : advice
+      );
+      const element = visibleTarget(step.selector);
+      if (step.advanceWhenVisible && visibleTarget(step.advanceWhenVisible)) {
+        activeRef.current?.advance(identity); return;
+      }
+      if (element !== observed) { resize.disconnect(); observed = element; if (element) resize.observe(element); }
+      if (!element) { setLayout(null); return; }
+      if (scrolled !== element) { scrolled = element; element.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }); }
+      const r = element.getBoundingClientRect();
+      const next = { identity, top: r.top - 6, left: r.left - 6, width: r.width + 12, height: r.height + 12 };
+      setLayout(previous => previous && Object.keys(next).every(key => next[key] === previous[key]) ? previous : next);
+    };
+    function schedule() { cancelAnimationFrame(frame); frame = requestAnimationFrame(update); }
+    const observer = new MutationObserver(schedule);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-help-round", 'class', 'hidden', 'disabled', 'aria-hidden'] });
+    window.addEventListener('resize', schedule);
+    window.addEventListener('scroll', schedule, true);
+    schedule();
+    return () => { cancelAnimationFrame(frame); resize.disconnect(); observer.disconnect(); window.removeEventListener('resize', schedule); window.removeEventListener('scroll', schedule, true); };
+  }, [step, identity, pathname, authenticated, session?.key]);
+
+  useEffect(() => {
+    const node = cardRef.current;
+    if (!node) return;
+    const observer = new ResizeObserver(() => setCardHeight(node.getBoundingClientRect().height));
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [identity, completed, menuOpen, minimizedStep]);
+
+  useEffect(() => {
+    if (!menuOpen || !authenticated) return;
+    const frame = requestAnimationFrame(() => menuRef.current?.querySelector('button')?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [menuOpen, authenticated]);
+
+  useEffect(() => {
+    if (!authenticated || (!menuOpen && !session && !completed)) return;
+    const keydown = event => {
+      if (event.key === 'Escape') {
+        event.preventDefault(); setMenuOpen(false); setSession(null); setCompleted(null); setLayout(null);
+        visibleTarget('[data-tour="help-button"]')?.focus();
+      }
+      if (event.key === 'Tab' && menuOpen) {
+        const buttons = [...menuRef.current.querySelectorAll('button:not(:disabled)')];
+        const first = buttons[0], last = buttons.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    };
+    window.addEventListener('keydown', keydown);
+    return () => window.removeEventListener('keydown', keydown);
+  }, [authenticated, menuOpen, session, completed]);
+
+  if (!authenticated || (!menuOpen && !session && !completed)) return null;
+  const contextualMessage = roundAdvice?.pathname === pathname ? roundAdvice.message : null;
+  const rect = layout?.identity === identity ? layout : null;
+  const width = Math.min(360, viewport.width - 32);
+  const height = Math.min(cardHeight, viewport.height * 0.55);
+  const clamp = (value, min, max) => Math.min(Math.max(value, min), Math.max(min, max));
+  let top = viewport.height - height - 16;
+  let left = viewport.width - width - 16;
+  if (rect && viewport.width >= 640) {
+    left = clamp(rect.left, 16, viewport.width - width - 16);
+    const below = rect.top + rect.height + 12;
+    const above = rect.top - height - 12;
+    if (below + height <= viewport.height - 16) top = below;
+    else if (above >= 16) top = above;
+    else {
+      if (rect.left + rect.width + width + 28 <= viewport.width) left = rect.left + rect.width + 12;
+      else if (rect.left >= width + 28) left = rect.left - width - 12;
+      top = clamp(rect.top, 16, viewport.height - height - 16);
+    }
+  }
+  const css = `
+    .chitflow-help {font-family:var(--font-ui, sans-serif);color:#111827;}
+    .chitflow-help h2,.chitflow-help h3 {color:#111827!important;line-height:1.25;margin:0;}
+    .chitflow-help p {color:#475569!important;font-size:14px;line-height:1.65;margin:12px 0;}
+    .chitflow-help button {cursor:pointer;font:inherit;}
+    .chitflow-help button:focus-visible {outline:3px solid #60a5fa;outline-offset:3px;}
+    .chitflow-help .gh-button {border:1px solid #dbe3ef;border-radius:12px;padding:9px 13px;background:#fff;color:#334155!important;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:13px;}
+    .chitflow-help .gh-primary {background:#111827;color:#fff!important;border-color:#111827;}
+    .chitflow-help .gh-primary span,.chitflow-help .gh-primary svg {color:#fff!important;}
+    .chitflow-help button:disabled {opacity:.45;cursor:default;}
+    .chitflow-help .gh-topic {padding:16px;border:1px solid #dbe3ef;border-radius:16px;text-align:left;background:#fff;color:#111827!important;display:flex;gap:12px;}
+    .chitflow-help .gh-topic:hover {background:#eff6ff;border-color:#93c5fd;}
+    .chitflow-help .gh-topics {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr));gap:12px;margin:20px 0;}
+  `;
+  const shell = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 22, padding: 22, boxShadow: '0 20px 70px #02061733' };
+  if (menuOpen) return <div className="chitflow-help" style={{ position:'fixed', inset:0, zIndex:9999, background:'#02061799', display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+    <style>{css}</style>
+    <div ref={menuRef} role="dialog" aria-modal="true" aria-labelledby="gh-menu-title" style={{ ...shell, maxWidth:720, width:'100%', maxHeight:'88dvh', overflowY:'auto' }}>
+      <div style={{display:'flex',justifyContent:'space-between',gap:16}}><h2 id="gh-menu-title">What would you like help with?</h2><button className="gh-button" aria-label="Close help" onClick={close}><X size={18}/></button></div>
+      <p>Choose a task. Follow the highlighted controls in the page. Actions complete only after the server accepts them.</p>
+      <div className="gh-topics">{HELP_TOPICS.map(topic => { const Icon=topic.icon; return <button key={topic.key} className="gh-topic" onClick={()=>start(topic.key)}><Icon size={20} style={{color:'#2563eb',flexShrink:0}}/><span><strong>{topic.key==='payout'?'Record a Payout':topic.title}</strong><span style={{display:'block',fontSize:13,color:'#475569',marginTop:6}}>{topic.key==='payout'?'Record a winner payout after result confirmation.':topic.description}</span></span></button>; })}</div>
+      <button className="gh-button gh-primary" onClick={()=>start('welcome')}>Replay ChitFlow introduction <ArrowRight size={16}/></button>
+    </div>
+  </div>;
+  if (!completed && minimizedStep === identity) return <div className="chitflow-help" style={{position:'fixed',zIndex:9999,bottom:16,right:16,maxWidth:'calc(100vw - 32px)'}}><style>{css}</style><button className="gh-button gh-primary" onClick={()=>setMinimizedStep(null)}>Resume guide · {session.index+1} / {tour.steps.length}</button><button className="gh-button" aria-label="Close guide" onClick={close}><X size={16}/></button></div>;
+  return <div className="chitflow-help">
+    <style>{css}</style>
+    {rect && <div aria-hidden="true" style={{position:'fixed',pointerEvents:'none',zIndex:9997,top:rect.top,left:rect.left,width:rect.width,height:rect.height,border:'2px solid #60a5fa',borderRadius:14,boxShadow:'0 0 0 9999px #02061766'}}/>}
+    <div ref={cardRef} role="region" aria-label="Guided Help" style={{...shell,position:'fixed',zIndex:9999,top:clamp(top,16,viewport.height-height-16),left:clamp(left,16,viewport.width-width-16),width,maxHeight:'55dvh',overflowY:'auto'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12}}><span style={{color:'#2563eb',fontSize:12,fontWeight:600}}>{completed ? 'Task complete' : `${tour.title} · ${session.index+1} / ${tour.steps.length}`}</span><div style={{display:'flex',gap:6}}>{!completed && <button className="gh-button" onClick={()=>setMinimizedStep(identity)}>Minimize</button>}<button className="gh-button" aria-label="Close guide" onClick={close}><X size={16}/></button></div></div>
+      <div aria-live="polite"><h3 style={{marginTop:14}}>{completed ? completed.title : step.title}</h3><p>{completed ? (completed.action ? 'The server accepted your action. Review the updated page for the result.' : 'You have finished this walkthrough. You can replay it from Help at any time.') : step.description}</p></div>
+      {!completed && step.selector && (!rect || contextualMessage) && <p style={{padding:12,background:'#eff6ff',borderRadius:12}}>{contextualMessage || prerequisites[session.key] || 'The control is not visible yet. Wait for the page to load or open the relevant form. The guide will highlight it when available.'}</p>}
+      {!completed && step.success && rect && !contextualMessage && <p style={{fontSize:12}}>Complete the highlighted action in the page. If it fails, correct the error and retry; this guide stays on this step.</p>}
+      <div style={{display:'flex',flexWrap:'wrap',gap:8,alignItems:'center',justifyContent:'space-between',marginTop:18}}>
+        {completed ? <><button className="gh-button" onClick={close}>Done</button><button className="gh-button gh-primary" onClick={()=>{setCompleted(null);setMenuOpen(true);}}>Choose another task</button></> : <>
+          <button className="gh-button" disabled={session.index===0} onClick={()=>{setLayout(null);setSession(current=>({...current,index:current.index-1}));}}><ArrowLeft size={14}/>Back</button>
+          <button className="gh-button" onClick={close}>Skip guide</button>
+          {!step.waitForPath && !step.success && !step.advanceWhenVisible && <button className="gh-button gh-primary" onClick={()=>advance()}>{session.index===tour.steps.length-1?'Finish':'Next'}<ArrowRight size={14}/></button>}
+          {(step.waitForPath || step.success || step.advanceWhenVisible) && <button className="gh-button gh-primary" type="button" onClick={continueInPage}>{step.waitForPath ? "Choose in the page" : step.advanceWhenVisible ? "Open form" : rect ? "Go to action" : "Find available controls"}</button>}
+        </>}
+      </div>
+      {!completed && ['createRound','contribution','verify','bid','dispute','payout'].includes(session.key) && <button className="gh-button" style={{marginTop:12}} onClick={()=>{setLayout(null);setSession(current=>({...current,index:0,choosing:true}));navigate('/chit-groups');}}>Choose another {session.key==='createRound'?'group':'round'}</button>}
+    </div>
+  </div>;
+}
+export default GuidedHelp;

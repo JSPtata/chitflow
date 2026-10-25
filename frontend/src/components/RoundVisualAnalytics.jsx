@@ -157,8 +157,7 @@ import {
             {
               name: "Received",
               value:
-                received ||
-                1,
+                received,
             },
           ];
   
@@ -193,7 +192,7 @@ import {
             CONTRIBUTION COLLECTION
         ================================================= */}
   
-        <Card className="rounded-[26px] border-black/[0.07] shadow-none">
+        <Card className="rounded-[26px] border-black/[0.07] bg-white text-slate-900 shadow-none">
   
           <CardHeader className="px-6 pt-6">
   
@@ -265,7 +264,7 @@ import {
                   %
                 </div>
   
-                <div className="mt-1 text-[11px] text-black/40">
+                <div className="mt-1 text-[11px] text-slate-600">
                   collected
                 </div>
   
@@ -323,11 +322,11 @@ import {
             BID PROGRESSION
         ================================================= */}
   
-        <Card className="rounded-[26px] border-black/[0.07] shadow-none">
+        <Card className="rounded-[26px] border-black/[0.07] bg-white text-slate-900 shadow-none">
   
           <CardHeader className="px-6 pt-6 md:px-7">
   
-            <div className="text-[11px] font-semibold uppercase tracking-[0.13em] text-violet-600">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.13em] text-blue-600">
               Auction activity
             </div>
   
@@ -348,9 +347,9 @@ import {
             {bidData.length ===
             0 ? (
   
-              <div className="flex h-[300px] flex-col items-center justify-center rounded-[20px] border border-dashed border-black/10 bg-[#fafafa]">
+              <div className="flex h-[300px] flex-col items-center justify-center rounded-[20px] border border-dashed border-black/10 bg-[#f5f9ff]">
   
-                <div className="flex size-12 items-center justify-center rounded-2xl bg-[#f1f3f6]">
+                <div className="flex size-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
   
                   <Gavel
                     size={19}
@@ -362,7 +361,7 @@ import {
                   No bids yet
                 </div>
   
-                <p className="mt-2 text-[12px] text-black/40">
+                <p className="mt-2 text-[12px] text-slate-600">
                   Bid progression appears
                   once members begin bidding.
                 </p>
@@ -371,7 +370,7 @@ import {
   
             ) : (
   
-              <div className="h-[320px] rounded-[20px] bg-[#fafbfc] p-3">
+              <div className="h-[320px] rounded-[20px] bg-[#f5f9ff] p-3">
   
                 <ResponsiveContainer
                   width="100%"
@@ -400,13 +399,13 @@ import {
   
                         <stop
                           offset="5%"
-                          stopColor="#7c3aed"
+                          stopColor="#2563eb"
                           stopOpacity={0.28}
                         />
   
                         <stop
                           offset="95%"
-                          stopColor="#7c3aed"
+                          stopColor="#2563eb"
                           stopOpacity={0}
                         />
   
@@ -416,7 +415,7 @@ import {
   
   
                     <CartesianGrid
-                      stroke="#e8eaee"
+                      stroke="#dbe3ef"
                       strokeDasharray="4 4"
                       vertical={false}
                     />
@@ -427,7 +426,7 @@ import {
                       axisLine={false}
                       tickLine={false}
                       tick={{
-                        fill: "#71717a",
+                        fill: "#475569",
                         fontSize: 11,
                       }}
                     />
@@ -437,7 +436,7 @@ import {
                       axisLine={false}
                       tickLine={false}
                       tick={{
-                        fill: "#71717a",
+                        fill: "#475569",
                         fontSize: 11,
                       }}
                       tickFormatter={
@@ -461,12 +460,12 @@ import {
                     <Area
                       type="monotone"
                       dataKey="amount"
-                      stroke="#7c3aed"
+                      stroke="#2563eb"
                       strokeWidth={3}
                       fill="url(#bidGradient)"
                       dot={{
                         r: 4,
-                        fill: "#7c3aed",
+                        fill: "#2563eb",
                         stroke: "#ffffff",
                         strokeWidth: 2,
                       }}
@@ -506,10 +505,10 @@ import {
   
         <Icon
           size={16}
-          className="text-black/40"
+          className="text-slate-600"
         />
   
-        <div className="mt-4 text-[11px] text-black/40">
+        <div className="mt-4 text-[11px] text-slate-600">
           {label}
         </div>
   
@@ -542,13 +541,13 @@ import {
         ?.payload;
   
     return (
-      <div className="rounded-xl border border-black/[0.08] bg-white px-4 py-3 shadow-xl">
+      <div className="rounded-xl border border-black/[0.08] bg-white px-4 py-3 text-slate-900 shadow-xl">
   
-        <div className="text-[11px] text-black/40">
+        <div className="text-[11px] text-slate-600">
           Bid #{item?.order}
         </div>
   
-        <div className="mt-1 text-[15px] font-semibold text-violet-700">
+        <div className="mt-1 text-[15px] font-semibold text-blue-700">
           ₹
           {Number(
             item?.amount ||
@@ -558,7 +557,7 @@ import {
           )}
         </div>
   
-        <div className="mt-1 text-[11px] text-black/40">
+        <div className="mt-1 text-[11px] text-slate-600">
           Bidder:{" "}
           {item?.bidder}
         </div>

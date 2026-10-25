@@ -28,6 +28,37 @@ import NotificationCenter
   from "@/components/NotificationCenter";
 
 
+const navigation = [
+    {
+      id: "dashboard",
+      label: "Overview",
+      path: "/dashboard",
+      icon: LayoutDashboard,
+      tour: "nav-dashboard",
+    },
+    {
+      id: "chits",
+      label: "Chit Groups",
+      path: "/chit-groups",
+      icon: WalletCards,
+      tour: "nav-chit-groups",
+    },
+    {
+      id: "members",
+      label: "Members",
+      path: "/members",
+      icon: Users,
+      tour: "nav-members",
+    },
+    {
+      id: "profile",
+      label: "Profile",
+      path: "/profile",
+      icon: UserRound,
+      tour: "nav-profile",
+    },
+  ];
+
 function AppShell({
   children,
   user,
@@ -60,36 +91,7 @@ function AppShell({
   ] = useState(false);
 
 
-  const navigation = [
-    {
-      id: "dashboard",
-      label: "Overview",
-      path: "/dashboard",
-      icon: LayoutDashboard,
-      tour: "nav-dashboard",
-    },
-    {
-      id: "chits",
-      label: "Chit Groups",
-      path: "/chit-groups",
-      icon: WalletCards,
-      tour: "nav-chit-groups",
-    },
-    {
-      id: "members",
-      label: "Members",
-      path: "/members",
-      icon: Users,
-      tour: "nav-members",
-    },
-    {
-      id: "profile",
-      label: "Profile",
-      path: "/profile",
-      icon: UserRound,
-      tour: "nav-profile",
-    },
-  ];
+
 
 
   const activePage =
@@ -427,6 +429,7 @@ function AppShell({
               <div data-tour="notifications">
 
                 <NotificationCenter
+                  key={user?.user_id || "anonymous"}
                   user={user}
                 />
 

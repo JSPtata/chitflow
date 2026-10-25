@@ -13,8 +13,6 @@ import {
     useState,
   } from "react";
   
-  import api from "@/api/api";
-  
   import {
     Badge,
   } from "@/components/ui/badge";
@@ -134,7 +132,9 @@ import {
     roundId,
     currentState,
     canControl = false,
-    onChanged,
+    onAdvance,
+    busy = false,
+    statusMessage = "",
   }) {
     const [
       advancing,
@@ -216,53 +216,30 @@ import {
       );
   
   
-    const advance =
-      async () => {
-        if (
-          !roundId ||
-          !nextState ||
-          blocked
-        ) {
-          return;
-        }
-  
-        try {
-          setAdvancing(true);
-          setMessage("");
-  
-          await api.patch(
-            `/chit-groups/rounds/${roundId}/state`,
-            {
-              new_state:
-                nextState.state,
-            }
-          );
-  
-          setMessage(
-            `Round moved to ${readableState(
-              nextState.state
-            )}.`
-          );
-  
-          if (
-            typeof onChanged ===
-            "function"
-          ) {
-            await onChanged();
-          }
-        } catch (error) {
-          setMessage(
-            error.response
-              ?.data
-              ?.detail ||
-              "The backend did not allow this transition."
-          );
-        } finally {
-          setAdvancing(false);
-        }
-      };
-  
-  
+    const advance = async () => {
+    if (!roundId || !nextState || blocked || !canControl || advancing || busy) {
+      return;
+    }
+    if (typeof onAdvance !== "function") {
+      setMessage("The round action handler is unavailable. Refresh the page.");
+      return;
+    }
+    try {
+      setAdvancing(true);
+      setMessage("");
+      await onAdvance();
+    } catch (error) {
+      setMessage(
+        error.response?.data?.detail || error.message ||
+        "Unable to complete the round action."
+      );
+    } finally {
+      setAdvancing(false);
+    }
+  };
+
+  const displayedMessage = message || statusMessage;
+
     return (
       <Card
         data-tour="round-lifecycle"
@@ -313,13 +290,13 @@ import {
               DARK PROCESS MAP
           ================================================= */}
   
-          <section className="chitflow-dark bg-[#0b0d12] px-5 py-8 text-white md:px-8 md:py-10">
+          <section className="chitflow-dark bg-[#071a33] px-5 py-8 text-white md:px-8 md:py-10">
   
             <div className="flex items-end justify-between gap-6">
   
               <div>
   
-                <div className="text-[12px] !text-white/40">
+                <div className="text-[12px] !text-white/65">
                   Lifecycle completion
                 </div>
   
@@ -335,7 +312,7 @@ import {
   
               <div className="text-right">
   
-                <div className="text-[12px] !text-white/40">
+                <div className="text-[12px] !text-white/65">
                   Current stage
                 </div>
   
@@ -353,7 +330,7 @@ import {
             <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/[0.08]">
   
               <div
-                className="h-full rounded-full bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400 transition-all duration-700"
+                className="h-full rounded-full bg-gradient-to-r from-blue-600 via-blue-400 to-blue-200 transition-all duration-700"
                 style={{
                   width:
                     `${progress}%`,
@@ -390,12 +367,12 @@ import {
   
                     <stop
                       offset="50%"
-                      stopColor="#7c3aed"
+                      stopColor="#60a5fa"
                     />
   
                     <stop
                       offset="100%"
-                      stopColor="#22d3ee"
+                      stopColor="#bfdbfe"
                     />
                   </linearGradient>
   
@@ -512,7 +489,7 @@ import {
                         item.active
                           ? "border-blue-400/50 bg-blue-500/10"
                           : item.complete
-                            ? "border-green-400/20 bg-green-500/[0.06]"
+                            ? "border-blue-400/30 bg-blue-500/10"
                             : "border-white/[0.07] bg-white/[0.03]"
                       }
                     `}
@@ -532,20 +509,20 @@ import {
                       <div
                         className={
                           item.future
-                            ? "text-[14px] font-semibold !text-white/35"
+                            ? "text-[14px] font-semibold !text-white/65"
                             : "text-[14px] font-semibold !text-white"
                         }
                       >
                         {item.title}
                       </div>
   
-                      <div className="mt-1 text-[11px] !text-white/35">
+                      <div className="mt-1 text-[11px] !text-white/65">
                         {item.description}
                       </div>
   
                     </div>
   
-                    <span className="text-[10px] font-semibold !text-white/25">
+                    <span className="text-[10px] font-semibold !text-white/55">
                       {String(
                         index + 1
                       ).padStart(
@@ -669,13 +646,13 @@ import {
                     data-tour="advance-round"
                     onClick={advance}
                     disabled={
-                      advancing ||
+                      advancing || busy ||
                       !nextState
                     }
                     className="h-12 rounded-full bg-[#111318] px-6 !text-white hover:bg-[#25282e]"
                   >
   
-                    {advancing ? (
+                    {(advancing || busy) ? (
   
                       <>
                         <Loader2
@@ -689,11 +666,9 @@ import {
                     ) : (
   
                       <>
-                        Advance to{" "}
-                        {
-                          nextState
-                            ?.title
-                        }
+                        {currentState === "RESULT_CONFIRMED"
+                          ? "Enter payout details"
+                          : `Advance to ${nextState?.title || "next stage"}`}
   
                         <ArrowRight
                           size={16}
@@ -723,10 +698,10 @@ import {
             )}
   
   
-            {message && (
+            {displayedMessage && (
   
               <div className="mt-4 rounded-xl border border-black/[0.07] bg-white px-4 py-3 text-[13px] text-black/60">
-                {message}
+                {displayedMessage}
               </div>
   
             )}
@@ -773,8 +748,8 @@ import {
               item.active
                 ? "border-blue-300 bg-blue-500/20 shadow-[0_0_34px_rgba(59,130,246,0.45)]"
                 : item.complete
-                  ? "border-green-400/30 bg-green-500/10"
-                  : "border-white/10 bg-[#11141a]"
+                  ? "border-blue-400/40 bg-blue-500/15"
+                  : "border-white/10 bg-[#0b2450]"
             }
           `}
         >
@@ -797,19 +772,19 @@ import {
               ? "mt-3 text-[12px] font-semibold !text-blue-200"
               : item.complete
                 ? "mt-3 text-[12px] font-semibold !text-white"
-                : "mt-3 text-[12px] font-semibold !text-white/35"
+                : "mt-3 text-[12px] font-semibold !text-white/65"
           }
         >
           {item.title}
         </div>
   
   
-        <div className="mx-auto mt-1 max-w-[110px] text-[9px] leading-4 !text-white/30">
+        <div className="mx-auto mt-1 max-w-[110px] text-[9px] leading-4 !text-white/65">
           {item.description}
         </div>
   
   
-        <div className="mt-1 text-[9px] font-semibold !text-white/20">
+        <div className="mt-1 text-[9px] font-semibold !text-white/55">
           {String(
             index + 1
           ).padStart(
@@ -835,7 +810,7 @@ import {
       return (
         <Check
           size={19}
-          className="text-green-300"
+          className="text-blue-300"
         />
       );
     }
@@ -852,7 +827,7 @@ import {
     return (
       <Circle
         size={13}
-        className="text-white/25"
+        className="text-white/55"
       />
     );
   }

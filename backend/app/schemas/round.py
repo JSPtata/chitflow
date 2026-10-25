@@ -1,10 +1,10 @@
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel, Field
 from datetime import datetime
 from typing import Optional
 
 
 class RoundCreate(BaseModel):
-    round_number: int
+    round_number: int = Field(gt=0)
     due_date: Optional[datetime] = None
 
 
@@ -21,5 +21,4 @@ class RoundResponse(BaseModel):
     due_date: Optional[datetime]
     winner_id: Optional[int]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

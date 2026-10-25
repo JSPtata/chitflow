@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 import bcrypt
 
 from app.db.database import get_db
@@ -18,7 +20,7 @@ router = APIRouter(
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
 
     existing_user = db.query(User).filter(
-        User.email == user.email
+        func.lower(User.email) == str(user.email).lower()
     ).first()
 
     if existing_user:
@@ -44,14 +46,18 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
 
     new_user = User(
         name=user.name,
-        email=user.email,
+        email=str(user.email).lower(),
         phone=user.phone,
         password_hash=hashed_password,
         role="MEMBER"
     )
 
     db.add(new_user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Email or phone is already registered")
     db.refresh(new_user)
 
     return new_user
@@ -61,7 +67,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
 def login_user(user: UserLogin, db: Session = Depends(get_db)):
 
     db_user = db.query(User).filter(
-        User.email == user.email
+        func.lower(User.email) == str(user.email).lower()
     ).first()
 
     if not db_user:

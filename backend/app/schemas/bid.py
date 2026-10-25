@@ -1,11 +1,11 @@
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 from decimal import Decimal
 from datetime import datetime
 from pydantic import BaseModel, Field
 
 
 class BidCreate(BaseModel):
-    bid_amount: Decimal = Field(gt=0)
+    bid_amount: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
 
 
 class BidResponse(BaseModel):
@@ -16,5 +16,4 @@ class BidResponse(BaseModel):
     timestamp: datetime
     status: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

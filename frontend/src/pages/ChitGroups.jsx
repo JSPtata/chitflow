@@ -1,6 +1,5 @@
 import {
   ArrowRight,
-  CircleDollarSign,
   Crown,
   IndianRupee,
   Plus,
@@ -11,6 +10,7 @@ import {
 } from "lucide-react";
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -129,7 +129,7 @@ function ChitGroups() {
   ===================================================== */
 
   const loadData =
-    async () => {
+    useCallback(async () => {
       try {
         setLoading(true);
 
@@ -161,8 +161,7 @@ function ChitGroups() {
           error.response?.status;
 
         if (
-          status === 401 ||
-          status === 403
+          status === 401
         ) {
           localStorage.removeItem(
             "token"
@@ -185,12 +184,13 @@ function ChitGroups() {
       } finally {
         setLoading(false);
       }
-    };
+    }, [navigate]);
 
 
   useEffect(() => {
-    loadData();
-  }, []);
+    const task = window.setTimeout(() => loadData(), 0);
+    return () => window.clearTimeout(task);
+  }, [loadData]);
 
 
   /* =====================================================

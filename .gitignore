@@ -25,3 +25,17 @@ frontend/dist/
 # IDE
 .vscode/
 .idea/
+
+# Local runtimes and databases
+.venv/
+venv/
+*.db
+*.sqlite
+*.sqlite3
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Browser test outputs
+frontend/test-results/
+frontend/playwright-report/

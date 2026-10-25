@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Numeric
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.db.database import Base
 
@@ -32,7 +32,7 @@ class Contribution(Base):
 
     payment_date = Column(
         DateTime,
-        default=datetime.utcnow
+        default=lambda: datetime.now(UTC).replace(tzinfo=None)
     )
 
     payment_status = Column(

@@ -1,7 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
 
-from app.db.database import engine, Base
+from app.db.database import engine, Base, get_db
 
 from app.models.user import User
 from app.models.chit_group import ChitGroup
@@ -35,10 +39,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -59,5 +60,13 @@ app.include_router(audit_events_router)
 @app.get("/")
 def home():
     return {
-        "message": "ChitFlow backend and PostgreSQL are connected"
+        "message": "ChitFlow API is running"
     }
+
+@app.get("/health")
+def health(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    return {"status": "ok", "database": "connected"}

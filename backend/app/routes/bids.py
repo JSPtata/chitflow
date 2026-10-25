@@ -31,7 +31,7 @@ def place_bid(
 ):
     round_obj = db.query(Round).filter(
         Round.round_id == round_id
-    ).first()
+    ).with_for_update().first()
 
     if not round_obj:
         raise HTTPException(
@@ -93,7 +93,7 @@ def propose_result(
 ):
     round_obj = db.query(Round).filter(
         Round.round_id == round_id
-    ).first()
+    ).with_for_update().first()
 
     if not round_obj:
         raise HTTPException(
@@ -127,7 +127,7 @@ def propose_result(
         Bid.round_id == round_id,
         Bid.status == "ACTIVE"
     ).order_by(
-        Bid.bid_amount.asc()
+        Bid.bid_amount.asc(), Bid.timestamp.asc(), Bid.bid_id.asc()
     ).first()
 
     if not winning_bid:
