@@ -22,7 +22,7 @@ if not (root / "backend/app/main.py").is_file():
 page = (root / "frontend/src/pages/RoundDetails.jsx").read_text()
 if "onAdvance={handleAdvanceState}" not in page:
     raise SystemExit("Apply the earlier lifecycle-handler update first. No files changed.")
-check = subprocess.run(["git", "apply", "--check", str(patch)], cwd=root)
+check = subprocess.run(["git", "apply", "--check", "--exclude=.gitignore", str(patch)], cwd=root)
 if check.returncode:
     raise SystemExit("Local files differ from the expected pre-audit version. No files changed; retain your changes and share the patch error.")
 paths = ['.github/workflows/checks.yml', '.gitignore', 'README.md', 'backend/.env.example', 'backend/app/core/config.py', 'backend/app/core/security.py', 'backend/app/main.py', 'backend/app/models/audit_event.py', 'backend/app/models/bid.py', 'backend/app/models/chit_group.py', 'backend/app/models/contribution.py', 'backend/app/models/membership.py', 'backend/app/models/round.py', 'backend/app/models/user.py', 'backend/app/routes/bids.py', 'backend/app/routes/chit_groups.py', 'backend/app/routes/contributions.py', 'backend/app/routes/disputes.py', 'backend/app/routes/memberships.py', 'backend/app/routes/payouts.py', 'backend/app/routes/rounds.py', 'backend/app/routes/users.py', 'backend/app/schemas/audit_event.py', 'backend/app/schemas/bid.py', 'backend/app/schemas/chit_group.py', 'backend/app/schemas/contribution.py', 'backend/app/schemas/dispute.py', 'backend/app/schemas/membership.py', 'backend/app/schemas/payout.py', 'backend/app/schemas/round.py', 'backend/app/schemas/user.py', 'backend/app/services/audit_service.py', 'backend/requirements-dev.txt', 'backend/requirements.txt', 'backend/tests/conftest.py', 'backend/tests/test_workflow.py', 'docs/VERIFICATION.md', 'frontend/.env.example', 'frontend/package-lock.json', 'frontend/package.json', 'frontend/playwright.config.js', 'frontend/src/App.jsx', 'frontend/src/api/api.js', 'frontend/src/components/AppShell.jsx', 'frontend/src/components/ChitJourney.jsx', 'frontend/src/components/DisputePanel.jsx', 'frontend/src/components/NotificationCenter.jsx', 'frontend/src/components/RoundVisualAnalytics.jsx', 'frontend/src/components/ui/badge.jsx', 'frontend/src/components/ui/button.jsx', 'frontend/src/components/ui/card.jsx', 'frontend/src/components/ui/input.jsx', 'frontend/src/components/ui/label.jsx', 'frontend/src/index.css', 'frontend/src/pages/ChitDetails.jsx', 'frontend/src/pages/ChitGroups.jsx', 'frontend/src/pages/Dashboard.jsx', 'frontend/src/pages/Members.jsx', 'frontend/src/pages/RoundDetails.jsx', 'frontend/src/styles/shadcn-LICENSE.md', 'frontend/src/styles/shadcn-tailwind.css', 'frontend/tests/e2e/cleanup.js', 'frontend/tests/e2e/final-workflow-smoke.spec.js', 'frontend/tests/e2e/help-smoke.spec.js', 'frontend/tests/e2e/session.spec.js', 'frontend/vite.config.js', 'pytest.ini']
@@ -39,7 +39,22 @@ for name in paths:
     else:
         new_files.append(name)
 (backup / "new-files.json").write_text(json.dumps(new_files, indent=2))
-subprocess.run(["git", "apply", str(patch)], cwd=root, check=True)
+subprocess.run(["git", "apply", "--exclude=.gitignore", str(patch)], cwd=root, check=True)
+# Local ignore rules often differ. Preserve them and append only missing rules.
+ignore = root / ".gitignore"
+original_ignore = ignore.read_text() if ignore.exists() else ""
+required_rules = [
+    ".env", ".env.*", "!.env.example", ".venv/", "venv/",
+    "backend/venv/", "backend/.venv/", "__pycache__/", "*.pyc",
+    "frontend/node_modules/", "frontend/dist/", ".DS_Store",
+    "*.db", "*.sqlite", "*.sqlite3", ".pytest_cache/", ".coverage",
+    "htmlcov/", "frontend/test-results/", "frontend/playwright-report/",
+]
+existing_rules = {line.strip() for line in original_ignore.splitlines()}
+missing_rules = [rule for rule in required_rules if rule not in existing_rules]
+if missing_rules:
+    separator = "" if not original_ignore or original_ignore.endswith("\n") else "\n"
+    ignore.write_text(original_ignore + separator + "\n# ChitFlow local dependencies, configuration and test outputs\n" + "\n".join(missing_rules) + "\n")
 # Untrack the legacy credentials file without deleting its working copy.
 untracked = subprocess.run(["git", "rm", "--cached", "--ignore-unmatch", "--", "backend/.env"], cwd=root, capture_output=True)
 if untracked.returncode:
